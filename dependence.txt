@@ -1,0 +1,11 @@
+PySide2
+rawkit
+pyserial
+qdarkstyle
+
+sudo apt-get install -y v4l2loopback-dkms
+sudo apt-get install gphoto2 v4l2loopback-utils v4l2loopback-dkms ffmpeg
+
+pip install opencv-python-headless
+
+sudo modprobe v4l2loopback exclusive_caps=1 card_label="GPhoto2 Webcam"
