@@ -428,17 +428,17 @@ class MainWindow(QWidget):
         self.center_point_txt()
 
 
-        surface_iso = self.iso_drop_surface.currentIndex()
-        surface_ss = self.ss_drop_surface.currentIndex()
-        surface_fstop = self.fstop_drop_surface.currentIndex()
+        surface_iso = self.iso_drop_surface.currentText()
+        surface_ss = self.ss_drop_surface.currentText()
+        surface_fstop = self.fstop_drop_surface.currentText()
 
-        scatter_iso = self.iso_drop_scatter.currentIndex()
-        scatter_ss = self.ss_drop_scatter.currentIndex()
-        scatter_fstop = self.fstop_drop_scatter.currentIndex()
+        # scatter_iso = self.iso_drop_scatter.currentIndex()
+        # scatter_ss = self.ss_drop_scatter.currentIndex()
+        # scatter_fstop = self.fstop_drop_scatter.currentIndex()
 
-        # scatter_iso = self.iso_drop_scatter.currentText()
-        # scatter_ss = self.ss_drop_scatter.currentText()
-        # scatter_fstop = self.fstop_drop_scatter.currentText()
+        scatter_iso = self.iso_drop_scatter.currentText()
+        scatter_ss = self.ss_drop_scatter.currentText()
+        scatter_fstop = self.fstop_drop_scatter.currentText()
 
         # Take the surface images
         ## Command to turn on light a
@@ -447,9 +447,9 @@ class MainWindow(QWidget):
         print('image 1: ')
 
       
-        # context = gp.Context()
-        # camera = gp.Camera()
-        # camera.init(context)
+        context = gp.Context()
+        camera = gp.Camera()
+        camera.init(context)
         # config_tree = camera.get_config(context)
         # print('=======')
 
@@ -487,84 +487,37 @@ class MainWindow(QWidget):
 
         # camera.exit(context)
 
-        # camera = gp.Camera()
-        # camera.init()
-        # print('Capturing image')
-        # # print(gp.GP_CAPTURE_IMAGE)
-        # config = camera.get_config(context)
-        # # gp.check_result(gp.gp_camera_get_config(camera))
+        print('Capturing image')
+       
+        config = camera.get_config(context)
+        
+        print(surface_fstop, surface_ss, surface_iso)
 
-        # print(surface_fstop, surface_ss, surface_iso)
+        capture_target_f = config.get_child_by_name('f-number')
+        print(capture_target_f.get_value())
+        capture_target_f.set_value(surface_fstop)
 
-        # capture_target_f = config.get_child_by_name('f-number')
-        # print(capture_target_f.get_value())
-        # capture_target_f.set_value(surface_fstop)
-        # print(config.get_child_by_name('f-number').get_value())
-        # # quit()
-        # # gp.check_result(gp.gp_widget_get_child_by_name(config, 'f-number'))        #    shutterspeed        iso
-        # # gp.gp_widget_set_value(capture_target_f, str(surface_fstop) )
-        # # # print(capture_target_f.set_value('f/8'))
+        capture_target_s = config.get_child_by_name('shutterspeed')
+        capture_target_s.set_value(surface_ss)
 
-        # # capture_target_s = gp.check_result(gp.gp_widget_get_child_by_name(config, 'shutterspeed'))   
-        # # gp.gp_widget_set_value(capture_target_s, str(surface_ss))  
-        # # # print(capture_target_s.set_value('1/10'))
+        capture_target_i = config.get_child_by_name('iso')
+        capture_target_i.set_value(surface_iso)
 
-        # # capture_target_i = gp.check_result(gp.gp_widget_get_child_by_name(config, 'iso'))  
-        # # gp.gp_widget_set_value(capture_target_i, str(surface_iso))   
-        # # print(capture_target_i.set_value('200'))
-
-        # # camera.set_config()
-
-        # # print(gp.gp_camera_set_config(camera, config, context))
+        camera.set_config(config)
 
         # # file_path = camera.capture(gp.GP_CAPTURE_IMAGE)
+     
+        file_path = camera.trigger_capture()
+        cnt = 0
+        while cnt<2:
+            event_type, event_data = camera.wait_for_event(100)
+            if event_type == gp.GP_EVENT_FILE_ADDED:
+                cnt += 1
+                cam_file = camera.file_get(event_data.folder, event_data.name, gp.GP_FILE_TYPE_NORMAL)
+                target_path = os.path.join(self.image_dir, self.surface_path + '.' + event_data.name.split('.')[-1])
+                print("Image is being saved to {}".format(target_path))
+                cam_file.save(target_path)
 
-        # file_path = camera.trigger_capture()
-        # time.sleep(1)
-        
-        # file_path_2 = camera.wait_for_event(gp.GP_EVENT_FOLDER_ADDED)
-        # time.sleep(1)
-        # file_path_3 = camera.wait_for_event(gp.GP_EVENT_FOLDER_ADDED)
-
-
-
-        # print(file_path)
-        # print(file_path_2)
-        # # print(file_path_2[1].name)
-        # print(file_path_3)
-        # print("===========================")
-
-        # file_path = camera.trigger_capture()
-        
-        # file_path_2 = camera.wait_for_event(gp.GP_EVENT_FOLDER_ADDED)
-        # file_path_3 = camera.wait_for_event(gp.GP_EVENT_FOLDER_ADDED)
-
-
-        # print(file_path)
-        # print(file_path_2)
-        # # print(file_path_2[1].name)
-        # print(file_path_3)
-        # print("++++++++++++++++++++++++")
-
-        # file_path = camera.trigger_capture()
-        
-        # file_path_2 = camera.wait_for_event(gp.GP_EVENT_FOLDER_ADDED)
-        # file_path_3 = camera.wait_for_event(gp.GP_EVENT_FOLDER_ADDED)
-
-
-        # print(file_path)
-        # print(file_path_2)
-        # # print(file_path_2[1].name)
-        # print(file_path_3)
-        # quit()
-        # print('Camera file path: {0}/{1}'.format(file_path.folder, file_path.name))
-        # target = os.path.join('./test1', file_path.name)
-        # print('Copying image to', target)
-        # camera_file = camera.file_get(file_path.folder, file_path.name, gp.GP_FILE_TYPE_NORMAL)
-
-        # print(camera_file)
-        
-        # camera_file.save(target)
         # # sp.call(['xdg-open', target])
         # # camera.exit()
         # print("finished")
@@ -581,26 +534,22 @@ class MainWindow(QWidget):
 
         # config_target = gp.check_result(gp.gp_widget_get_child_by_name(config, str('iso')))
         # print(gp.gp_widget_get_child(config, 1))
-        # for key, value in config.items():
-        #     print(key, value)
-        # OK, widget = gp.gp_widget_get_child_by_name(config, "iso")
-        # print(OK, widget)
+    
         # camera.exit(context)
-        # quit()
+     
 
-
-        p = sp.Popen(["gphoto2",
-                      "--set-config-index", f"iso={surface_iso}",
-                      "--set-config-index", f"shutterspeed={surface_ss}",
-                      "--set-config-index", f"f-number={surface_fstop}",
-                      f"--filename={self.surface_path + '.%C'}",
-                      "--set-config", "viewfinder=1",
-                      # "--wait-event=0.5s",
-                      "--capture-image-and-download"],
-                      stdout=sp.PIPE, cwd=f"{self.image_dir}/")
-        print("image1 mid")
-        sout, _ = p.communicate()
-        p.wait()
+        # p = sp.Popen(["gphoto2",
+        #               "--set-config-index", f"iso={surface_iso}",
+        #               "--set-config-index", f"shutterspeed={surface_ss}",
+        #               "--set-config-index", f"f-number={surface_fstop}",
+        #               f"--filename={self.surface_path + '.%C'}",
+        #               "--set-config", "viewfinder=1",
+        #               # "--wait-event=0.5s",
+        #               "--capture-image-and-download"],
+        #               stdout=sp.PIPE, cwd=f"{self.image_dir}/")
+        # print("image1 mid")
+        # sout, _ = p.communicate()
+        # p.wait()
         print("image1 finished")
 
         self.arduino.write(b'b')
@@ -611,46 +560,42 @@ class MainWindow(QWidget):
         # camera = gp.Camera()
         # camera.init(context)
 
-        # print('Capturing image')
-        # config = camera.get_config(context)
+        print('Capturing Scatter image')
+        config = camera.get_config(context)
+
+        # capture_target_f = config.get_child_by_name('f-number')
+        capture_target_f.set_value(scatter_fstop)
+        # capture_target_s = config.get_child_by_name('shutterspeed')
+        capture_target_s.set_value(scatter_ss)
+        # capture_target_i = config.get_child_by_name('iso')
+        capture_target_i.set_value(scatter_iso)
+
+        camera.set_config(config)
+        camera.trigger_capture()
         
-        # capture_target_f = gp.check_result(gp.gp_widget_get_child_by_name(config, 'f-number'))        #    shutterspeed        iso
-        # gp.gp_widget_set_value(capture_target_f, scatter_fstop)
-        
-        # capture_target_s = gp.check_result(gp.gp_widget_get_child_by_name(config, 'shutterspeed'))   
-        # gp.gp_widget_set_value(capture_target_s, scatter_ss)  
-       
-        # capture_target_i = gp.check_result(gp.gp_widget_get_child_by_name(config, 'iso'))  
-        # gp.gp_widget_set_value(capture_target_i, scatter_iso)
-       
-        # # camera.set_config()
+        cnt = 0
+        while cnt<2:
+            event_type, event_data = camera.wait_for_event(100)
+            if event_type == gp.GP_EVENT_FILE_ADDED:
+                cnt += 1
+                cam_file = camera.file_get(event_data.folder, event_data.name, gp.GP_FILE_TYPE_NORMAL)
+                target_path = os.path.join(self.image_dir, self.scatter_path + '.' + event_data.name.split('.')[-1])
+                print("Image is being saved to {}".format(target_path))
+                cam_file.save(target_path)
 
-        # print(gp.gp_camera_set_config(camera, config, context))
+        camera.exit(context)
 
-        # file_path = camera.capture(gp.GP_CAPTURE_IMAGE)
-        # print('Camera file path: {0}/{1}'.format(file_path.folder, file_path.name))
-        # target = os.path.join('./test1', file_path.name)
-        # print('Copying image to', target)
-        # camera_file = camera.file_get(
-        #     file_path.folder, file_path.name, gp.GP_FILE_TYPE_NORMAL)
-        # camera_file.save(target)
-       
-        # # camera.exit()
-        # print("finished")
-
-        # camera.exit(context)
-
-        p = sp.Popen(["gphoto2",
-                      "--set-config-index", f"iso={scatter_iso}",
-                      "--set-config-index", f"shutterspeed={scatter_ss}",
-                      "--set-config-index", f"f-number={scatter_fstop}",
-                      f"--filename={self.scatter_path + '.%C'}",
-                      "--set-config", "viewfinder=1",
-                      # "--wait-event=0.5s",
-                      "--capture-image-and-download"],
-                      stdout=sp.PIPE, cwd=f"{self.image_dir}/")
-        sout, _ = p.communicate()
-        p.wait()
+        # p = sp.Popen(["gphoto2",
+        #               "--set-config-index", f"iso={scatter_iso}",
+        #               "--set-config-index", f"shutterspeed={scatter_ss}",
+        #               "--set-config-index", f"f-number={scatter_fstop}",
+        #               f"--filename={self.scatter_path + '.%C'}",
+        #               "--set-config", "viewfinder=1",
+        #               # "--wait-event=0.5s",
+        #               "--capture-image-and-download"],
+        #               stdout=sp.PIPE, cwd=f"{self.image_dir}/")
+        # sout, _ = p.communicate()
+        # p.wait()
 
         # Turn off both lights
         self.arduino.write(b'c')
@@ -1013,8 +958,8 @@ if __name__ == '__main__':
     window.show()
 
     # Focus here
-    focus_window = FocusWindow(window)
-    focus_window.show()
+    # focus_window = FocusWindow(window)
+    # focus_window.show()
 
     app.exec_()
     # window.watcher.stop()

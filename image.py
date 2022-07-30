@@ -20,6 +20,8 @@ import subprocess as sp
 import qimage2ndarray
 import rawpy, time, skimage
 
+import concurrent.futures
+
 
 class FocusWindow(QWidget):
     def __init__(self, main, parent=None):
@@ -741,6 +743,13 @@ class ImageWindow(QWidget):
     #     imageio.imwrite(os.path.join(self.image_dir, "scatter_diff_roi_tmp.png"), scatter_diff_roi)
     #     imageio.imwrite(os.path.join(self.image_dir, "scatter_mask_tmp.png"), Image.fromarray((np.argmax(mask, axis=0) * 255 / mask.shape[0]).astype(np.uint8)))
 
+    def try_lda(self, patch_list):
+        try:
+            lda_input = skimage.transform.rescale(self.scatter_roi, 1/self.rescale_size, multichannel=True, anti_aliasing=True)
+            mask = segmenation_LDA(lda_input, patch_list, self.image_dir, self.main_window.scatter_path.split("_")[1])
+        except:
+            mask = (0,0)
+        return mask
 
     def loadImage(self):
 
@@ -759,121 +768,56 @@ class ImageWindow(QWidget):
         scaled_map = map.scaled(400, 400, QtCore.Qt.KeepAspectRatio)
         self.scatter_label.setPixmap(scaled_map)
 
-        self.end_img_ready_1 = time.time()
-
-
         ############ Calculate Mask Here ##################
         print(self.image_dir + '/' + self.main_window.scatter_path + '.jpg')
         # print(self.main_window.scatter_path)
         
         # if(int(self.main_window.scatter_path.split("_")[1]) > 1):
-        ####### Change different seg methods and dependence here
-        # scatter_name = self.image_dir + "/" + self.main_window.scatter_path + ".jpg"
-        scatter_name_nef = self.image_dir + "/" + self.main_window.scatter_path + ".nef"
+        ####### Change different seg methods and dependence here ########
 
+        # scatter_name = self.image_dir + "/" + self.main_window.scatter_path + ".jpg"
+        # scatter_name = self.image_dir + "/test_input.jpg"
+
+        scatter_name_nef = self.image_dir + "/" + self.main_window.scatter_path + ".nef"
         # scatter_name_nef = self.image_dir + "/" + "IMG_0004_scatter.nef"
         
-        # scatter_name = self.image_dir + "/test_input.jpg"
         # scatter_img = imageio.imread(scatter_name)
-
-        # scatter_name_nef = self.image_dir + "/IMG_0021_scatter.nef"
         scatter_img = rawpy.imread(scatter_name_nef).postprocess()
         self.end_img_ready_2 = time.time()
        
         # print(int(self.main_window.position[1]), self.main_window.cropped_size[1]/2, int(self.main_window.position[1]), self.main_window.cropped_size[1]/2, int(self.main_window.position[0]), self.main_window.cropped_size[0]/2, int(self.main_window.position[0]), self.main_window.cropped_size[0]/2)
-       
         self.scatter_roi = scatter_img[int(self.main_window.position[1]-self.main_window.cropped_size[1]/2):int(self.main_window.position[1]+self.main_window.cropped_size[1]/2), int(self.main_window.position[0]-self.main_window.cropped_size[0]/2):int(self.main_window.position[0]+self.main_window.cropped_size[0]/2), :]
+
+        # ####### Load the mask image to GUI
+        # imageio.imwrite(os.path.join(self.image_dir, "scatter_roi_tmp.jpg"), self.scatter_roi)
+        # loader = QtGui.QImage()
+        # loader.load(self.image_dir + '/scatter_roi_tmp.jpg')
+        # map = QtGui.QPixmap(loader)
 
         roi_image = qimage2ndarray.array2qimage(self.scatter_roi)
         map = QtGui.QPixmap.fromImage(roi_image)
-
-
-        # imageio.imwrite(os.path.join(self.image_dir, "scatter_roi_tmp.jpg"), self.scatter_roi)
-        # print(os.path.join(self.image_dir, "scatter_roi_tmp.jpg"))
-
-        # ####### Load the mask image to GUI
-        # loader = QtGui.QImage()
-        # loader.load(self.image_dir + '/scatter_roi_tmp.jpg')
-
-        # map = QtGui.QPixmap(loader)
         self.scaled_roi_tmp = map.scaled(400, 400, QtCore.Qt.KeepAspectRatio)
         self.cropped_scatter_label.setPixmap(self.scaled_roi_tmp)
 
         self.end_img_ready = time.time()
 
-        # 
-
         # Select ROI 
         ####### We take a 2400x1600 rect as input for segmentation, same 6x downsampled for these value (map.scaled(400, 400, QtCore.Qt.KeepAspectRatio)).
-        
-        # loader.load(self.image_dir + '/scatter_mask_tmp.jpg')
-
-        # map = QtGui.QPixmap(loader)
-        # scaled_map = map.scaled(400, 400, QtCore.Qt.KeepAspectRatio)
-        # self.scatter_mask_label.setPixmap(scaled_map)
-
-        mask_cnn = SegmentationNN(self.scatter_roi, self.main_window.model)
-       
-        # mask_cnn = np.ones((800,800))
-        if(np.max(mask_cnn)==0):
-            self.cnn_mask_label.setText("CNN output all ZERO array")
-            print("CNN output all ZERO array")
-        else:
-            # imageio.imwrite(os.path.join(self.image_dir, "cnn_mask_tmp.jpg"), (255*(mask_cnn/np.max(mask_cnn))).astype(np.uint8))
-
-            # loader = QtGui.QImage()
-            # loader.load(self.image_dir + '/cnn_mask_tmp.jpg')
-
-            # map = QtGui.QPixmap(loader)
-            print(np.expand_dims(255*(mask_cnn/np.max(mask_cnn)), -1).astype(np.uint8).shape)
-            # quit()
-            _mask_cnn = qimage2ndarray.array2qimage((255*(mask_cnn/np.max(mask_cnn))).astype(np.uint8))
-            map = QtGui.QPixmap.fromImage(_mask_cnn)
-            scaled_map = map.scaled(400, 400, QtCore.Qt.KeepAspectRatio)
-            self.cnn_mask_label.setPixmap(scaled_map)
-
-        self.end_cnn = time.time()
 
         # ### Get the pre_scatter ###
-        # pre_scatter_num = int(self.main_window.scatter_path.split("_")[1]) - 1
-        # pre_scatter_name = self.main_window.scatter_path.split("_")[0] + "_" + str(pre_scatter_num).zfill(4) + "_" + self.main_window.scatter_path.split("_")[2]
-        # print(pre_scatter_name)
-
-        # scatter_name_1 = self.image_dir + '/' + pre_scatter_name + ".png"
-        # scatter_name_2 = self.image_dir + "/" + self.main_window.scatter_path + ".png"
-
-        # scatter_1 = imageio.imread(scatter_name_1)
-        # scatter_2 = imageio.imread(scatter_name_2)
-
-        # scatter_diff = scatter_2 - scatter_1
-        # self.scatter_diff_roi = scatter_diff[int(self.main_window.position[1])-800:int(self.main_window.position[1])+800, int(self.main_window.position[0])-1200:int(self.main_window.position[0])+1200, :]
-
-        # print("Segmentation!    Calling Unet!")
-        # self.segmentation()
-
         # ####### Load the mask image to GUI
-        # loader = QtGui.QImage()
-        # loader.load(self.image_dir + '/scatter_diff_roi_tmp.png')
 
-        # map = QtGui.QPixmap(loader)
-        # scaled_map = map.scaled(400, 400, QtCore.Qt.KeepAspectRatio)
-        # self.cropped_scatter_label.setPixmap(scaled_map)
+        if(int(self.main_window.scatter_path.split("_")[1]) > 1):
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                thread_lda = executor.submit(try_lda, [])
+                # Reduce the lda saving option, downsample speed up
+                thread_cnn = executor.submit(SegmentationNN, self.scatter_roi, self.main_window.model)
 
-        # loader.load(self.image_dir + '/scatter_mask_tmp.png')
+                mask = thread_lda.result()
+                mask_cnn = thread_cnn.result()
+        else:
+            mask_cnn = SegmentationNN(self.scatter_roi, self.main_window.model)
 
-        # map = QtGui.QPixmap(loader)
-        # scaled_map = map.scaled(400, 400, QtCore.Qt.KeepAspectRatio)
-        # self.scatter_mask_label.setPixmap(scaled_map)
-        # print("index", self.main_window.scatter_path.split("_")[1], int(self.main_window.scatter_path.split("_")[1]))
-
-        # if(int(self.main_window.scatter_path.split("_")[1]) > 1):
-            # try:
-        lda_input = skimage.transform.rescale(self.scatter_roi, 1/self.rescale_size, multichannel=True, anti_aliasing=True)
-        _load_lda_img = time.time()
-        mask = segmenation_LDA(lda_input, [], self.image_dir, self.main_window.scatter_path.split("_")[1])
-        self.end_lda = time.time()
-        # except:
-            # mask = np.zeros((40,40))
         # print("class:{}".format(set(mask.flatten())))          
         # imageio.imwrite(os.path.join(self.image_dir, "scatter_mask_tmp.jpg"), Image.fromarray((np.argmax(mask, axis=0) * 255 / mask.shape[0]).astype(np.uint8)))
         if(np.max(mask)==0):
@@ -881,15 +825,31 @@ class ImageWindow(QWidget):
             print("Reselect the BK & FG!")
         else:
             # imageio.imwrite(os.path.join(self.image_dir, "scatter_mask_tmp.jpg"), (255*(mask/np.max(mask))).astype(np.uint8))
-
             # loader = QtGui.QImage()
             # loader.load(self.image_dir + '/scatter_mask_tmp.jpg')
-
             # map = QtGui.QPixmap(loader)
+
             _mask = qimage2ndarray.array2qimage((255*(mask/np.max(mask))).astype(np.uint8))
             map = QtGui.QPixmap.fromImage(_mask)
             scaled_map = map.scaled(400, 400, QtCore.Qt.KeepAspectRatio)
             self.scatter_mask_label.setPixmap(scaled_map)
+
+        # mask_cnn = SegmentationNN(self.scatter_roi, self.main_window.model)
+       
+        if(np.max(mask_cnn)==0):
+            self.cnn_mask_label.setText("CNN output all ZERO array")
+            print("CNN output all ZERO array")
+        else:
+            # imageio.imwrite(os.path.join(self.image_dir, "cnn_mask_tmp.jpg"), (255*(mask_cnn/np.max(mask_cnn))).astype(np.uint8))
+            # loader = QtGui.QImage()
+            # loader.load(self.image_dir + '/cnn_mask_tmp.jpg')
+            # map = QtGui.QPixmap(loader)
+
+            print(np.expand_dims(255*(mask_cnn/np.max(mask_cnn)), -1).astype(np.uint8).shape)
+            _mask_cnn = qimage2ndarray.array2qimage((255*(mask_cnn/np.max(mask_cnn))).astype(np.uint8))
+            map = QtGui.QPixmap.fromImage(_mask_cnn)
+            scaled_map = map.scaled(400, 400, QtCore.Qt.KeepAspectRatio)
+            self.cnn_mask_label.setPixmap(scaled_map)
 
         ##############################
 
@@ -899,9 +859,6 @@ class ImageWindow(QWidget):
         print("Pre-process_1 of images time: {}".format(self.end_img_ready_1 - self.begin_A))
         print("Pre-process_2 of images time: {}".format(self.end_img_ready_2 - self.begin_A))
         print("Pre-process of images time: {}".format(self.end_img_ready - self.begin_A))
-        print("CNN time: {}".format(self.end_cnn - self.begin_A))
-        print("pre_LDA time: {}".format(_load_lda_img - self.begin_A))
-        print("LDA time: {}".format(self.end_lda - self.begin_A))
         print("Total time: {}".format(self.end_F - self.begin_A))
 
         # How long does metadata take
@@ -920,7 +877,6 @@ class ImageWindow(QWidget):
         # Convert the shutter speed to a number
         # self.ss_loaded_surface = int(np.ceil(1 / self.ss_loaded_surface))
         # self.validateSurfaceImage()
-
 
         raw_scatter = pyexiv2.ImageMetadata(self.image_dir + '/' + self.main_window.scatter_path + '.nef')
            
