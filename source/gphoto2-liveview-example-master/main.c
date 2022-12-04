@@ -9,8 +9,8 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 
-#define WINDOW_WIDTH (800)
-#define WINDOW_HEIGHT (600)
+#define WINDOW_WIDTH (1400)
+#define WINDOW_HEIGHT (900)
 
 #define FRAME_RATE (30)
 #define FRAME_BUFFER_SIZE (4 * WINDOW_WIDTH * WINDOW_HEIGHT)
@@ -46,11 +46,20 @@ void draw()
     }
 
     surface = IMG_Load_RW(rw, 1);
+    // printf("%i, %i", surface->w, surface->h);
+    // printf("===============");
+    SDL_Rect stretchRect;
+    stretchRect.x = 0;
+    stretchRect.y = 0;
+    stretchRect.w = surface->w *2 ;
+    stretchRect.h = surface->h * 2;
+    // SDL_BlitScaled( gStretchedSurface, NULL, gScreenSurface, &stretchRect );
+
     if (!surface) {
         goto out;
     }
 
-    if (SDL_BlitSurface(surface, NULL, window_surface, NULL) < 0) {
+    if (SDL_BlitScaled(surface, NULL, window_surface, &stretchRect) < 0) {
         goto out;
     }
 

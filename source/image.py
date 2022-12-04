@@ -243,7 +243,7 @@ class CenterPointWindow(QWidget):
 
         # Set the line edits for the block size
         self.block_size_label = QLabel("Block Size")
-        self.block_size = ["Large", "Normal"]
+        self.block_size = ["Large", "Standard"]
         self.block_size_drop = QComboBox()
         self.block_size_drop.addItems(self.block_size)
         
@@ -315,7 +315,7 @@ class CenterPointWindow(QWidget):
                 self.block_size_rescale = 8
                 self.cropped_size = [1600, 2400]
                 pass
-            elif(self.block_size_drop.currentText()=="Normal"):
+            elif(self.block_size_drop.currentText()=="Standard"):
                 self.block_size_rescale = 8
                 self.cropped_size = [1500, 1000]
                 pass
@@ -430,6 +430,16 @@ class ImageWindow(QWidget):
 
         self.setLayout(self.initLayout())
 
+    # def closeEvent(self, event):
+    #     reply = QMessageBox.question(self, 'Window Close', 'Are you sure you want to close the window?',
+    #             QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+
+    #     if reply == QMessageBox.Yes:
+    #         event.accept()
+    #         print('Window closed')
+    #     else:
+    #         event.ignore()
+
     def initLayout(self):
         self.retake_button = QPushButton('Retake Image')
         self.accept_button = QPushButton('Accept Image')
@@ -455,12 +465,12 @@ class ImageWindow(QWidget):
         #################################
 
         self.notes_edit = QLineEdit("No notes")
-        self.bk = QPushButton("BK")
+        self.bk = QPushButton("Background")
         # self.bk_2 = QPushButton("BK_2")
-        self.fg = QPushButton("FG")
+        self.fg = QPushButton("Foreground")
         # self.size_lable = QLabel("size:")
         # self.size_val = QLineEdit("100")
-        self.box_accept = QPushButton("Accept Boxs")
+        self.box_accept = QPushButton("Accept Boxes")
 
         self.retake_button.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
         self.accept_button.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
@@ -785,7 +795,7 @@ class ImageWindow(QWidget):
         scaled_map = map.scaled(400, 400, QtCore.Qt.KeepAspectRatio)
         self.scatter_label.setPixmap(scaled_map)
 
-        self.end_img_ready_1 = time.time()
+        # self.end_img_ready_1 = time.time()
 
 
         ############ Calculate Mask Here ##################
@@ -804,7 +814,7 @@ class ImageWindow(QWidget):
 
         # scatter_name_nef = self.image_dir + "/IMG_0021_scatter.nef"
         scatter_img = rawpy.imread(scatter_name_nef).postprocess()
-        self.end_img_ready_2 = time.time()
+        # self.end_img_ready_2 = time.time()
        
         # print(int(self.main_window.position[1]), self.main_window.cropped_size[1]/2, int(self.main_window.position[1]), self.main_window.cropped_size[1]/2, int(self.main_window.position[0]), self.main_window.cropped_size[0]/2, int(self.main_window.position[0]), self.main_window.cropped_size[0]/2)
        
@@ -826,7 +836,7 @@ class ImageWindow(QWidget):
         self.cropped_scatter_label.setPixmap(self.scaled_roi_tmp)
         self.scaled_roi_painted = self.scaled_roi_tmp.copy()
 
-        self.end_img_ready = time.time()
+        # self.end_img_ready = time.time()
 
      
         # Select ROI 
@@ -874,7 +884,7 @@ class ImageWindow(QWidget):
         # if(int(self.main_window.scatter_path.split("_")[1]) > 1):
             # try:
         lda_input = skimage.transform.rescale(self.scatter_roi, 1/self.rescale_size, multichannel=True, anti_aliasing=True)
-        _load_lda_img = time.time()
+        # _load_lda_img = time.time()
 
         with concurrent.futures.ThreadPoolExecutor() as executor:
             try:
@@ -886,13 +896,13 @@ class ImageWindow(QWidget):
             mask_cnn = cnn_thread.result()
             mask = lda_thread.result()
         # mask = segmenation_LDA(lda_input, [], self.image_dir, self.main_window.scatter_path.split("_")[1])
-        self.end_lda = time.time()
+        # self.end_lda = time.time()
         # except:
             # mask = np.zeros((40,40))
         # print("class:{}".format(set(mask.flatten())))          
         # imageio.imwrite(os.path.join(self.image_dir, "scatter_mask_tmp.jpg"), Image.fromarray((np.argmax(mask, axis=0) * 255 / mask.shape[0]).astype(np.uint8)))
         if(np.max(mask)==0):
-            self.scatter_mask_label.setText("Reselect the BK & FG!")
+            self.scatter_mask_label.setText("Reselect the Background & Foreground!")
             print("Reselect the BK & FG!")
         else:
             # imageio.imwrite(os.path.join(self.image_dir, "scatter_mask_tmp.jpg"), (255*(mask/np.max(mask))).astype(np.uint8))
@@ -921,24 +931,23 @@ class ImageWindow(QWidget):
             # loader.load(self.image_dir + '/cnn_mask_tmp.jpg')
 
             # map = QtGui.QPixmap(loader)
-            print(np.expand_dims(255*(mask_cnn/np.max(mask_cnn)), -1).astype(np.uint8).shape)
+            # print(np.expand_dims(255*(mask_cnn/np.max(mask_cnn)), -1).astype(np.uint8).shape)
             # quit()
             _mask_cnn = qimage2ndarray.array2qimage((255*(mask_cnn/np.max(mask_cnn))).astype(np.uint8))
             map = QtGui.QPixmap.fromImage(_mask_cnn)
             scaled_map = map.scaled(400, 400, QtCore.Qt.KeepAspectRatio)
             self.cnn_mask_label.setPixmap(scaled_map)
 
-        self.end_cnn = time.time()
-
+        # self.end_cnn = time.time()
         self.end_F= time.time()
 
         print("Load Window time: {}".format(self.end_loadimage - self.begin_A))
-        print("Pre-process_1 of images time: {}".format(self.end_img_ready_1 - self.begin_A))
-        print("Pre-process_2 of images time: {}".format(self.end_img_ready_2 - self.begin_A))
-        print("Pre-process of images time: {}".format(self.end_img_ready - self.begin_A))
-        print("CNN time: {}".format(self.end_cnn - self.begin_A))
-        print("pre_LDA time: {}".format(_load_lda_img - self.begin_A))
-        print("LDA time: {}".format(self.end_lda - self.begin_A))
+        # print("Pre-process_1 of images time: {}".format(self.end_img_ready_1 - self.begin_A))
+        # print("Pre-process_2 of images time: {}".format(self.end_img_ready_2 - self.begin_A))
+        # print("Pre-process of images time: {}".format(self.end_img_ready - self.begin_A))
+        # print("CNN time: {}".format(self.end_cnn - self.begin_A))
+        # print("pre_LDA time: {}".format(_load_lda_img - self.begin_A))
+        # print("LDA time: {}".format(self.end_lda - self.begin_A))
         print("Total time: {}".format(self.end_F - self.begin_A))
 
         # How long does metadata take
@@ -947,9 +956,9 @@ class ImageWindow(QWidget):
         raw_surface = pyexiv2.ImageMetadata(self.image_dir + '/' + self.main_window.surface_path + '.nef')
             # raw_img = exif.Image(raw)
         raw_surface.read()
-        print("iso", raw_surface["Exif.Photo.ISOSpeedRatings"].value)
-        print("aperture", raw_surface["Exif.Photo.FNumber"].value)
-        print("shutter", raw_surface["Exif.Photo.ExposureTime"].value)
+        # print("iso", raw_surface["Exif.Photo.ISOSpeedRatings"].value)
+        # print("aperture", raw_surface["Exif.Photo.FNumber"].value)
+        # print("shutter", raw_surface["Exif.Photo.ExposureTime"].value)
         # print(raw_img.list_all())
         self.iso_loaded_surface = raw_surface["Exif.Photo.ISOSpeedRatings"].value
         self.ss_loaded_surface = raw_surface["Exif.Photo.ExposureTime"].value
@@ -1110,7 +1119,7 @@ class ImageWindow(QWidget):
         # Reset the hit button text to what it was before
         self.main_window.trim_button.setText("TRIM (10 μm)")
         self.main_window.trim_button.setStyleSheet("color: white")
-        self.main_window.sect_button.setText("SECT (5 μm)")
+        self.main_window.sect_button.setText("SECTION (5 μm)")
         self.main_window.sect_button.setStyleSheet("color: white")
 
         # msg = self.main_window.main_label.text()

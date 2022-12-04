@@ -48,21 +48,25 @@ class MainWindow(QWidget):
         # Image counter
         self.image_count = None
 
+        self.trim_first = True
+        self.sect_first = True 
+
         self.model = self.init_cnn_model()
 
         # Create the arduino connection
         # Try all three USB ports
-        try:
-            self.arduino = serial.Serial('/dev/ttyACM0', 9600)     #dev/cu.usbmodem14201
-        except IOError:
-            try:
-                self.arduino = serial.Serial('/dev/cu.usbmodem14301', 9600)
-            except IOError:
-                try:
-                    self.arduino = serial.Serial('/dev/cu.usbmodem14401', 9600)
-                except IOError:
-                    print("You don't have the right arduino port.")
-                    sys.exit()
+        # global arduino
+        # try:
+        #     arduino = serial.Serial('/dev/ttyACM0', 9600)     #dev/cu.usbmodem14201
+        # except IOError:
+        #     try:
+        #         arduino = serial.Serial('/dev/cu.usbmodem14301', 9600)
+        #     except IOError:
+        #         try:
+        #             arduino = serial.Serial('/dev/cu.usbmodem14401', 9600)
+        #         except IOError:
+        #             print("You don't have the right arduino port.")
+        #             sys.exit()
         # Set main window properties
         self.setGeometry(300, 300, 1200, 800)
         self.setWindowTitle('Slice-n-Snap')
@@ -109,7 +113,7 @@ class MainWindow(QWidget):
         # Populate the table
         self.populateTable()
             # self.calibrationImage()
-
+        
 
     def backup_dir_buttonClick(self):
         # Have the user select the directory
@@ -179,11 +183,38 @@ class MainWindow(QWidget):
         # Do we need to wait here?
 
     def trim_buttonClick(self):
+        print(self.trim_first)
+        self.sect_button.setEnabled(False)
+
+        # check if distance is changed if first click
+        if (self.trim_first == True):
+            self.trim_first = False
+            # print(self.main_table.rowCount())
+            print(self.total_distance, int(self.main_table.item(self.main_table.rowCount()-1,1).text()))
+            if (self.total_distance != int(self.main_table.item(self.main_table.rowCount()-1,1).text())):
+                reply = QMessageBox.question(self, 'Total Distance Not Match', 'Are you sure you want to change the total distance?',
+                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+
+                if reply == QMessageBox.Yes:
+                    self.total_distance = int(self.main_table.item(self.main_table.rowCount()-1,1).text())
+                    # temp = "<font color=green>Everything Nominal</font>"
+                    # self.main_label.setText(temp)
+                else:
+                    temp = "<font color=red>Please correct the Distance</font>"
+                    self.main_label.setText(temp)
+                    self.trim_first = True
+                    # self.trim_button.setEnabled(False)
+                    # self.sect_button.setEnabled(False)
+                    # self.capture_button.setEnabled(False)
+                    return
+        temp = "<font color=green>Everything Nominal</font>"
+        self.main_label.setText(temp)
 
         self.image_distance = self.image_distance + 10
         self.total_distance = self.total_distance + 10
         self.image_dist_label.setText('Image Distance: ' + str(self.image_distance) + ' μm')
         self.total_dist_label.setText('Total Distance: ' + str(self.total_distance) + ' μm')
+        
 
         if self.image_distance == 50:
             msg = "Take An Image!"
@@ -197,10 +228,38 @@ class MainWindow(QWidget):
 
     def sect_buttonClick(self):
 
+        print(self.sect_first)
+        self.trim_button.setEnabled(False)
+
+        # check if distance is changed if first click
+        if (self.sect_first == True):
+            self.sect_first = False
+            # print(self.main_table.rowCount())
+            print(self.total_distance, int(self.main_table.item(self.main_table.rowCount()-1,1).text()))
+            if (self.total_distance != int(self.main_table.item(self.main_table.rowCount()-1,1).text())):
+                reply = QMessageBox.question(self, 'Total Distance Not Match', 'Are you sure you want to change the total distance?',
+                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+
+                if reply == QMessageBox.Yes:
+                    self.total_distance = int(self.main_table.item(self.main_table.rowCount()-1,1).text())
+                    # print('Total distanc changed')
+                else:
+                    temp = "<font color=red>Please correct the Distance</font>"
+                    self.main_label.setText(temp)
+                    self.sect_first = True
+                    # self.trim_button.setEnabled(False)
+                    # self.sect_button.setEnabled(False)
+                    # self.capture_button.setEnabled(False)
+                    return
+        temp = "<font color=green>Everything Nominal</font>"
+        self.main_label.setText(temp)
+
         self.image_distance = self.image_distance + 5
         self.total_distance = self.total_distance + 5
         self.image_dist_label.setText('Image Distance: ' + str(self.image_distance) + ' μm')
         self.total_dist_label.setText('Total Distance: ' + str(self.total_distance) + ' μm')
+        self.sect_first = False
+
 
         if self.image_distance == 50:
             msg = "Take An Image!"
@@ -215,7 +274,7 @@ class MainWindow(QWidget):
     def populateTable(self):
 
         # Check for CSV files
-        self.csv_list = sorted(glob.glob(self.image_dir + '/csv_files/*'))
+        self.csv_list = sorted(glob.glob(self.image_dir + '/csv_files/*.csv'))
 
         # If the directory is empty then make a folder
         if self.csv_list == []:
@@ -262,9 +321,17 @@ class MainWindow(QWidget):
                 self.section_count = 0
                 self.section_start = 0
             else:
-                last_section_number = int(section_list[-1].split(';')[0][0])
-                self.section_count = last_section_number + 1
+                self.started_sects = True
+                # Format: *a, *b, *c. There is no guarantee the sectioning is less than 10
+                last_section_number = int(section_list[-1].split(';')[0][:-1])        # Modified, remove the last letter. 
                 self.section_start = int(total_distance[0]) - 50
+                # print(self.total_distance - self.section_start, self.started_sects)
+                # print(last_section_number)
+                # quit()
+                # After each load, check if need message sectioning
+                if (self.total_distance - self.section_start) % 250 == 0:
+                    msg = "<font color=red size=40>You should be taking sections</font>"
+                    self.main_label.setText(msg)
 
             # Iterate through the items in the list and set the appropriate table items
             for i, row in enumerate(self.table_list):
@@ -275,17 +342,68 @@ class MainWindow(QWidget):
     def save(self):
         path = self.image_dir + '/csv_files/'
         # Append the image name to the csv - will make it different
-        name = 'csv_depth_{0}_'.format(str(self.total_distance).zfill(4))
-        name += self.table_list[-1][0][0]
-        name += '.csv'
+        # name = 'csv_depth_{0}_'.format(str(self.total_distance).zfill(4))
+
+        if (type(self.table_list[-1][0]) == type("string")):
+            table_list_1_name = str(self.table_list[-1][0][2:18])
+           
+        else:
+            table_list_1_name = str(self.table_list[-1][0][0])
+           
+        name = "csv_" + table_list_1_name + ".csv"
+        print(name)
+       
+        # Each time we call save(), using the data in main_table. time ok?
+        save_table_list = self.table_list.copy()
+
+        for i, row in enumerate(self.table_list):
+            for j, col in enumerate(row):
+                save_table_list[i][j] = self.main_table.item(i,j).text()
+        
 
         with open(path + name, mode='w') as f:
             writer = csv.writer(f, delimiter=',')
-            for row in self.table_list:
+            for row in save_table_list:
                 writer.writerow(row)
 
         # Backup to make sure the CSV file gets copied
         self.backup()
+
+    def closeEvent(self, event):
+        self.save()
+        event.accept()
+        # reply = QMessageBox.question(self, 'Window Close', 'Are you sure you want to close the window?',
+        #         QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+
+        # if reply == QMessageBox.Yes:
+        #     event.accept()
+        #     print('Window closed')
+        # else:
+        #     event.ignore()
+
+    # def save_amendment_and_exit(self):
+    #     # change & save before capture
+    #     # print(self.table_list[-1][0], type(self.table_list[-1][0]))
+    #     if (type(self.table_list[-1][0] == type("string"))):
+    #         table_list_1_name = []
+    #         table_list_1_name.append(self.table_list[-1][0][2:18])
+    #         # print(table_list_1_name)
+    #     else:
+    #         table_list_1_name = self.table_list[-1][0]
+
+    #     for i, row in enumerate(self.table_list):
+    #         for j, col in enumerate(row):
+    #             self.table_list[i][j] = self.main_table.item(i,j).text()
+                    
+    #     # check here if the talbe_list is a string
+    
+    #     self.table_list[-1][0] = table_list_1_name
+    #     # print(self.table_list[-1][0])
+    #     # print(self.table_list[-1][0][0])
+    #     self.save()
+
+    #     self.close()
+    #     self.destroy()
 
     # Open a window for user to provide the center info of the tissure
     def centerCapture(self):
@@ -421,6 +539,13 @@ class MainWindow(QWidget):
 
     def capture_buttonClick(self):
 
+        self.trim_first = True
+        self.sect_first = True
+
+        # Turn off both lights
+        arduino.write(b'c')
+        # time.sleep(0.1)
+
         # Get the image names
         self._getImageName()
         # self._updateCapture()
@@ -444,7 +569,7 @@ class MainWindow(QWidget):
         ## Command to turn on light a
         # time_A = time.time()
 
-        self.arduino.write(b'a') 
+        arduino.write(b'a') 
         time.sleep(0.1)
         print('image 1: ')
 
@@ -556,7 +681,7 @@ class MainWindow(QWidget):
         # p.wait()
         print("image1 finished")
 
-        self.arduino.write(b'b')
+        arduino.write(b'b')
         time.sleep(0.1)
         # print('image 2: ' + scatter_iso)
 
@@ -601,7 +726,7 @@ class MainWindow(QWidget):
        
 
         # Turn off both lights
-        self.arduino.write(b'c')
+        arduino.write(b'c')
         # self.capture_button.setText("Capture Image")
         # self.capture_button.setFont(self.large_text)
 
@@ -621,6 +746,7 @@ class MainWindow(QWidget):
 
         self.imageWindowLauncher()
 
+
         self.backup()
 
     def main_button_clicked(self):
@@ -636,6 +762,7 @@ class MainWindow(QWidget):
         self.columnLabels = ["File Name","Distance","Sections",
                              "Shutter Speed", "ISO", "Aperature", "Notes"]
         self.main_table.setHorizontalHeaderLabels(self.columnLabels)
+        # self.save_and_exit = QPushButton("save & exit")
 
         # Set buttons for the camera settings for the surface image
         surface_label = QLabel("Surface Image Settings")
@@ -650,6 +777,8 @@ class MainWindow(QWidget):
         self.ss_button_scatter = QPushButton("SS")
 
         self.save_info_button = QPushButton("Save")
+
+        # self.save_and_exit.clicked.connect(self.save_amendment_and_exit)
 
         # Connect the buttons for the surface image
         self.iso_button_surface.clicked.connect(self.changeSurfaceISO)
@@ -817,8 +946,12 @@ class MainWindow(QWidget):
         # settings_layout.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Preferred)
         # Make the talbe have its own layout
         # Not sure this is necessary as the table isn't that complicated
+        table_layout = QGridLayout()
+        table_layout.addWidget(self.main_table, 0, 0)
+        # table_layout.addWidget(self.save_and_exit, 1, 0)
+
         layout = QGridLayout()
-        layout.addWidget(self.main_table, 0, 0)
+        layout.addLayout(table_layout, 0, 0)
         layout.addLayout(settings_layout, 0, 1)
         layout.setColumnStretch(0, 50)
         layout.setColumnStretch(1, 10)
@@ -899,7 +1032,7 @@ class MainWindow(QWidget):
 
         # Make the hit button and the labels for the section distances
         self.trim_button = QPushButton("TRIM (10 μm)")
-        self.sect_button = QPushButton("SECT (5 μm)")
+        self.sect_button = QPushButton("SECTION (5 μm)")
 
         self.image_dist_label = QLabel()
         self.total_dist_label = QLabel()
@@ -935,10 +1068,14 @@ class MainWindow(QWidget):
 
         # Create the layout
         layout = QGridLayout()
-        layout.addWidget(self.trim_button, 0, 0, 1, 1)
-        layout.addWidget(self.sect_button, 1, 0, 1, 1)
-        layout.addWidget(self.image_dist_label, 0, 1)
-        layout.addWidget(self.total_dist_label, 1, 1)
+        layout.addWidget(self.trim_button, 0, 0, 1, 2)
+        layout.addWidget(self.sect_button, 1, 0, 1, 2)
+
+        # layout.addWidget(self.trim_button, 0, 1, 1, 1)
+        # layout.addWidget(self.sect_button, 1, 1, 1, 1)
+
+        layout.addWidget(self.image_dist_label, 0, 2, 1, 2)
+        layout.addWidget(self.total_dist_label, 1, 2, 1, 2)
         layout.setColumnStretch(0, 20)
         layout.setColumnStretch(1, 15)
 
@@ -962,19 +1099,35 @@ if __name__ == '__main__':
 
     app = QApplication(sys.argv)
     app.setStyleSheet(qdarkstyle.load_stylesheet_pyside2())
+
+    global arduino
+    try:
+        arduino = serial.Serial('/dev/ttyACM0', 9600)     #dev/cu.usbmodem14201
+    except IOError:
+        try:
+            arduino = serial.Serial('/dev/cu.usbmodem14301', 9600)
+        except IOError:
+            try:
+                arduino = serial.Serial('/dev/cu.usbmodem14401', 9600)
+            except IOError:
+                print("You don't have the right arduino port.")
+                sys.exit()
      
     window = MainWindow()
 
     window.show()
 
-
     # Focus here
     p = sp.Popen(["/home2/tester/Desktop/recordingGui-master/focus.sh"], shell=True, stdout=sp.PIPE)
+
+    # time.sleep(1)
+    # arduino.write(b'a')    
 
     # focus_window = FocusWindow(window)
     # focus_window.show()
 
     app.exec_()
+
     # window.watcher.stop()
     # window.thread.quit()
     # window.thread.wait()
