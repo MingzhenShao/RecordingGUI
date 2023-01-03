@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 
-import os
-import sys
+import os, shutil, sys, glob, time
 import csv
-import glob
-import time
 import serial
 import qdarkstyle
 import numpy as np
@@ -92,9 +89,96 @@ class MainWindow(QWidget):
 
     def image_dir_buttonClick(self):
         # Have the user select the directory for the images
-        self.image_dir = self.selectDirectory()
+        # self.image_dir = self.selectDirectory()
+
+        img_dir_prefix = "/home2/tester/Desktop/Storage_2/"     #will be load from outside
+        bkp_dir_prefix = "/v/raid10/animal_data/blockface/"
+
+        # Do checking here
+        # block num checking
+        try:
+            block_num = int(self.block_textbox.text())
+        except:
+            temp = "<font color=red>Unvalid Block Number!</font>"
+            self.main_label.setText(temp)
+            return
+
+        # print(int(self.block_textbox.text()))
+        if(block_num<100):
+            block_name = self.block_textbox.text().zfill(2)
+        else:
+            temp = "<font color=red>Block Number out of bound!</font>"
+            self.main_label.setText(temp)
+            return  
+
+        # sample num checking
+        try:
+            sample_num = int(self.sample_textbox.text())
+        except:
+            temp = "<font color=red>Unvalid Animal Number!</font>"
+            self.main_label.setText(temp)
+            return
+
+        # print(int(self.sample_textbox.text()))
+        if(sample_num<1000):
+            sample_name = self.sample_textbox.text().zfill(3)
+        else:
+            temp = "<font color=red>Animal Number out of bound!</font>"
+            self.main_label.setText(temp)
+            return    
+
+        #animal checking
+        _animal_text = str(self.animal_textbox.text())
+        _animal_type = _animal_text[0].lower()
+        print(_animal_text[1:])
+        if (_animal_type != 'r' and _animal_type != 'm'):
+            temp = "<font color=red>Unvalid animal type!</font>"
+            self.main_label.setText(temp)
+            return
+
+        try:
+            animal_num = int(_animal_text[1:])
+        except:
+            temp = "<font color=red>Unvalid Animal Number</font>"
+            self.main_label.setText(temp)
+            return
+
+        
+        if(animal_num<100):
+            animal_name = _animal_text[0].upper() + _animal_text[1:].zfill(2)
+        else:
+            temp = "<font color=red>Animal Number out of bound!</font>"
+            self.main_label.setText(temp)
+            return    
+
+
+        sample_folder = animal_name + '-' + sample_name
+
+        img_dir = os.path.join(img_dir_prefix, sample_folder, block_name)
+        bkp_dir = os.path.join(bkp_dir_prefix, sample_folder, block_name)
+        print(img_dir, bkp_dir)
+
+        
+        if(not os.path.exists(img_dir)):
+            os.makedirs(img_dir)
+
+        # if(not os.path.exists(bkp_dir)):
+        #     os.makedirs(bkp_dir)
+
+        if(not (os.path.exists(img_dir) and os.path.exists(bkp_dir))):
+            print("Fail to create saving path, please check!")
+            temp = "<font color=red>Fail to create saving path, please check!</font>"
+            self.main_label.setText(temp)
+
+        self.img_dir_label.setText(img_dir)
+        self.bkp_dir_label.setText(bkp_dir)
+        
+        self.image_dir = img_dir
+        self.backup_dir = bkp_dir
+
+
         # Update the label with the directory they chose
-        self.image_dir_label.setText(self.image_dir + '/')
+        # self.image_dir_label.setText(self.image_dir + '/')
         # Disable the button after the directory has been chosen
         self.image_dir_button.setDisabled(True)
         # Start monitoring the directory
@@ -109,27 +193,15 @@ class MainWindow(QWidget):
             # self.ss_button_surface.setDisabled(False)
             # msg = "<font color=green>Everything Nominal</font>"
             # self.main_label.setText(msg)
-        self.backup_dir_button.setEnabled(True)
+        # self.backup_dir_button.setEnabled(True)
         # Populate the table
         self.populateTable()
             # self.calibrationImage()
-        
-
-    def backup_dir_buttonClick(self):
-        # Have the user select the directory
-        self.backup_dir = self.selectDirectory()
-        # Update the label with the directory they chose
-        self.backup_dir_label.setText(self.backup_dir + '/')
-        # Disable the button so they can't change the directory
-        self.backup_dir_button.setDisabled(True)
-        # Need to check that the backup directory is the same as the image directory
-        self.backup()
-
         if not os.path.exists(self.backup_dir + '/csv_files/'):
             os.makedirs(self.backup_dir + '/csv_files/')
+        self.backup()
 
-        # Only if both directories have been selected do we enable the rest of the GUI
-        # if not self.image_dir_button.isEnabled():
+
         self.main_table.setDisabled(False)
         self.trim_button.setDisabled(False)
         self.sect_button.setDisabled(False)
@@ -143,13 +215,45 @@ class MainWindow(QWidget):
         self.main_button.setDisabled(False)
         temp = "<font color=green>Everything Nominal</font>"
         self.main_label.setText(temp)
-            # Populate the table
-            # self.populateTable()
-            # self.calibrationImage()
+        
+
+    # def backup_dir_buttonClick(self):
+    #     # Have the user select the directory
+    #     self.backup_dir = self.selectDirectory()
+    #     # Update the label with the directory they chose
+    #     self.backup_dir_label.setText(self.backup_dir + '/')
+    #     # Disable the button so they can't change the directory
+    #     self.backup_dir_button.setDisabled(True)
+    #     # Need to check that the backup directory is the same as the image directory
+    #     self.backup()
+
+    #     if not os.path.exists(self.backup_dir + '/csv_files/'):
+    #         os.makedirs(self.backup_dir + '/csv_files/')
+
+    #     # Only if both directories have been selected do we enable the rest of the GUI
+    #     # if not self.image_dir_button.isEnabled():
+    #     self.main_table.setDisabled(False)
+    #     self.trim_button.setDisabled(False)
+    #     self.sect_button.setDisabled(False)
+    #     self.iso_button_surface.setDisabled(False)
+    #     self.fstop_button_surface.setDisabled(False)
+    #     self.ss_button_surface.setDisabled(False)
+    #     self.iso_button_scatter.setDisabled(False)
+    #     self.fstop_button_scatter.setDisabled(False)
+    #     self.ss_button_scatter.setDisabled(False)
+    #     self.capture_button.setDisabled(False)
+    #     self.main_button.setDisabled(False)
+    #     temp = "<font color=green>Everything Nominal</font>"
+    #     self.main_label.setText(temp)
+    #         # Populate the table
+    #         # self.populateTable()
+    #         # self.calibrationImage()
 
 
     def backup(self):
         '''Function for backing up the image directory'''
+
+        # shutil.copytree(self.image_dir, self.backup_dir)        #Will overwrite become a problem?
         # Create a list of the image files is the main and backup dirs
         image_list = glob.glob(self.image_dir + '/*.nef')
         backup_list = glob.glob(self.backup_dir + '/*.nef')
@@ -340,9 +444,16 @@ class MainWindow(QWidget):
                     self.main_table.setItem(i, j, item)
 
     def save(self):
-        path = self.image_dir + '/csv_files/'
         # Append the image name to the csv - will make it different
         # name = 'csv_depth_{0}_'.format(str(self.total_distance).zfill(4))
+        if (not(hasattr(self, 'image_dir'))):
+            # do not provide any folder
+            return
+        if(len(self.table_list) == 0):
+            # Closing GUI with an empty folder.
+            return
+
+        path = self.image_dir + '/csv_files/'
 
         if (type(self.table_list[-1][0]) == type("string")):
             table_list_1_name = str(self.table_list[-1][0][2:18])
@@ -961,41 +1072,67 @@ class MainWindow(QWidget):
     def _initDirsLayout(self):
 
         # Add the directory buttons
-        self.image_dir_button =  QPushButton("Select Image Folder")
-        self.backup_dir_button =  QPushButton("Select Backup Folder")
+        self.image_dir_button =  QPushButton("Generate Image Folder")
+        # self.backup_dir_button =  QPushButton("Select Backup Folder")
         self.capture_button = QPushButton("Capture Images")
 
         # Add the directory labels
-        self.image_dir_label = QLabel()
-        self.backup_dir_label = QLabel()
+        self.img_dir_label = QLabel()
+        self.bkp_dir_label = QLabel()
+
+        self.path_1_label = QLabel()
+        self.path_2_label = QLabel()
+        self.path_3_label = QLabel()
+        self.animal_textbox = QLineEdit()
+        self.sample_textbox = QLineEdit()
+        self.block_textbox = QLineEdit()
+
+        self.path_1_label.setText("Animal Name")
+        self.path_2_label.setText("-")
+        self.path_3_label.setText("Block Number")
+
+        self.animal_textbox.setText("R20")
+        self.sample_textbox.setText("000")
+        self.block_textbox.setText("01")
+
+        self.img_dir_label.setText("/home2/tester/Desktop/Storage_1/???-???/??")
+        self.bkp_dir_label.setText("/v/raid10/animal_data/blockface/???-???/??")
+
+
         self.image_dist_label = QLabel()
         self.main_label = QLabel()
         self.main_button = QPushButton("Reset Sections")
 
         # Change the font of all the lables and buttons
-        self.image_dir_label.setFont(self.small_text)
-        self.backup_dir_label.setFont(self.small_text)
+        # self.image_dir_label.setFont(self.small_text)
+        # self.backup_dir_label.setFont(self.small_text)
+        ###############################################################
         self.image_dist_label.setFont(self.small_text)
         self.main_label.setFont(self.small_text)
         self.main_button.setFont(self.small_text)
+
         self.image_dir_button.setFont(self.small_text)
-        self.backup_dir_button.setFont(self.small_text)
+        # self.backup_dir_button.setFont(self.small_text)
+
         self.capture_button.setFont(self.large_text)
 
         # Set the size policy for the label so it expands vertically
         self.main_label.setSizePolicy(QSizePolicy.Preferred,QSizePolicy.Expanding)
         self.main_button.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
+        self.image_dir_button.setSizePolicy(QSizePolicy.Expanding,QSizePolicy.Expanding)
         self.capture_button.setSizePolicy(QSizePolicy.Expanding,QSizePolicy.Expanding)
 
         # Initalize the messages for the main label and the directories
-        msg = "<font color=red>Please select the Image and Backup Directories</font>"
-        self.image_dir = "/Path/to/image/directoy/"
-        self.backup_dir = "/Path/to/backup/directoy/"
+        msg = "<font color=red>Please input the block information</font>"
+        # self.image_dir = "/Path/to/image/directoy/"
+        # self.backup_dir = "/Path/to/backup/directoy/"
         self.main_message = msg
 
         # Set the labels with the inital messages
-        self.image_dir_label.setText(self.image_dir)
-        self.backup_dir_label.setText(self.backup_dir)
+
+        # self.image_dir_label.setText(self.image_dir)
+        # self.backup_dir_label.setText(self.backup_dir)
+        ############################################################
         self.main_label.setText(self.main_message)
 
         # Set the alignment of the main text
@@ -1004,27 +1141,49 @@ class MainWindow(QWidget):
 
         # Connect the buttons to their functions
         self.image_dir_button.clicked.connect(self.image_dir_buttonClick)
-        self.backup_dir_button.clicked.connect(self.backup_dir_buttonClick)
+        # self.backup_dir_button.clicked.connect(self.backup_dir_buttonClick)
         self.capture_button.clicked.connect(self.capture_buttonClick)
         self.main_button.clicked.connect(self.main_button_clicked)
 
         # Diable the backup directory button at first
-        self.backup_dir_button.setEnabled(False)
+        # self.backup_dir_button.setEnabled(False)
         self.capture_button.setEnabled(False)
         self.main_button.setDisabled(True)
 
         # Define the layout for the main window
         layout = QGridLayout()
-        layout.setColumnStretch(0, 0)
-        layout.setColumnStretch(1, 1)
-        layout.setColumnStretch(2, 1)
-        layout.addWidget(self.image_dir_button, 0, 0)
-        layout.addWidget(self.image_dir_label, 0, 1)
-        layout.addWidget(self.backup_dir_button, 1, 0)
-        layout.addWidget(self.backup_dir_label, 1, 1)
-        layout.addWidget(self.capture_button, 0, 2, 2, 1)
-        layout.addWidget(self.main_label, 2, 1, 1, 2)
-        layout.addWidget(self.main_button, 2, 0, 1, 1)
+        # layout.setColumnStretch(0, 0)
+        # layout.setColumnStretch(1, 1)
+        # layout.setColumnStretch(2, 1)
+
+        path_layout = QGridLayout()
+        # path_layout.setColumnStretch(0,3)
+        # path_layout.setColumnStretch(1,3)
+        # path_layout.setColumnStretch(2,5)
+        # path_layout.setColumnStretch(3,3)
+        # path_layout.setColumnStretch(4,3)
+        # path_layout.setColumnStretch(5,3)
+        path_layout.addWidget(self.path_1_label, 0, 1)
+        path_layout.addWidget(self.animal_textbox, 0, 2)
+        path_layout.addWidget(self.path_2_label, 0, 3)
+        path_layout.addWidget(self.sample_textbox, 0, 4)
+        path_layout.addWidget(self.path_3_label, 0, 5)
+        path_layout.addWidget(self.block_textbox, 0, 6)
+
+        path_layout.addWidget(self.img_dir_label, 1, 1, 1, 3)
+        path_layout.addWidget(self.bkp_dir_label, 2, 1, 1, 3)
+
+      
+        layout.addWidget(self.image_dir_button, 0, 0, 3, 1)
+        layout.addLayout(path_layout, 0, 1)
+        
+        # layout.addWidget(self.image_dir_button, 0, 0, 2, 1)
+        # layout.addWidget(self.image_dir_label, 0, 1, 1, 1)
+        # layout.addWidget(self.backup_dir_button, 1, 0, 2, 1)
+        # layout.addWidget(self.backup_dir_label, 1, 1, 1, 1)
+        layout.addWidget(self.capture_button, 0, 2, 3, 1)
+        layout.addWidget(self.main_label, 3, 1, 1, 2)
+        layout.addWidget(self.main_button, 3, 0, 1, 1)
 
         return layout
 
@@ -1118,7 +1277,7 @@ if __name__ == '__main__':
     window.show()
 
     # Focus here
-    p = sp.Popen(["/home2/tester/Desktop/recordingGui-master/focus.sh"], shell=True, stdout=sp.PIPE)
+    # p = sp.Popen(["/home2/tester/Desktop/recordingGui-master/focus.sh"], shell=True, stdout=sp.PIPE)
 
     # time.sleep(1)
     # arduino.write(b'a')    
