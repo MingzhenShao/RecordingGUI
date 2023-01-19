@@ -208,6 +208,35 @@ class FocusWindow(QWidget):
 #                 self.changePixmap.emit(p)
 
 
+class FocusCheckWindow(QWidget):
+
+    def __init__(self, image_dir, main, parent=None):
+        super(FocusCheckWindow, self).__init__(parent)
+
+        # Set main window properties
+        self.setGeometry(250, 250, 1400, 1400)
+        self.setWindowTitle('Focus Check Window')
+
+        self.image_dir = image_dir
+        self.main_window = main
+     
+        self.setLayout(self.initLayout())
+
+    def initLayout(self):
+        loader = QtGui.QImage()
+        scatter_label = QLabel("Loading...")
+        loader.load(os.path.join(self.image_dir, self.main_window.scatter_path + '.jpg'))
+
+        map = QtGui.QPixmap(loader)
+        scaled_map = map.scaled(1400, 1400, QtCore.Qt.KeepAspectRatio)
+        scatter_label.setPixmap(scaled_map)
+
+        layout = QGridLayout()
+        layout.addWidget(scatter_label, 0, 0)
+       
+        return layout
+        
+        
 
 class CenterPointWindow(QWidget):
 
@@ -308,6 +337,7 @@ class CenterPointWindow(QWidget):
     def mousePressEvent(self, event: QtGui.QMouseEvent):
         if event.button() == QtCore.Qt.LeftButton:
             event.accept()
+
             _localPos = event.localPos()
             # print(self.scatter_label.x(), self.scatter_label.y())
 
@@ -324,8 +354,13 @@ class CenterPointWindow(QWidget):
           
             ####### a several pixels margin in the label is ignored, since the position don't need pixel level acc.
             ####### QPixmap is 8x downsampled. 
-
+            
             self.position = [(_localPos.x()-self.scatter_label.x())*self.block_size_rescale, (_localPos.y()-self.scatter_label.y())*self.block_size_rescale]
+
+            if(int(self.position[1]-self.cropped_size[1]/2)<0 or int(self.position[1]+self.cropped_size[1]/2)>self.loader.height() or int(self.position[0]-self.cropped_size[0]/2)<0 or int(self.position[0]+self.cropped_size[0]/2)>self.loader.width()):
+                self.position_label.setText("Center Point too close to bord!")
+                return
+
             self.position_label.setText("Center Point (x, y): " + str([self.position]))
             # print(_localPos.x(),self.scatter_label.x(), self.cropped_size[0]/self.block_size_rescale/2)
             # print(_localPos.y(), self.scatter_label.y(), self.cropped_size[1]/self.block_size_rescale/2, self.cropped_size[0], self.cropped_size[1])
@@ -336,16 +371,19 @@ class CenterPointWindow(QWidget):
 
             cropQPixmap = self.scaled_map.copy(rect)
             self.scatter_cropped_label.setPixmap(cropQPixmap)
+
         else:
             event.ignore()
             return
 
     def getCenter(self):
-        loader = QtGui.QImage()
-        loader.load(self.image_dir + '/' + self.main_window.scatter_path + '.jpg')  
+        self.loader = QtGui.QImage()
+        print(self.image_dir + '/' + self.main_window.scatter_path + '.jpg')
+        self.loader.load(self.image_dir + '/' + self.main_window.scatter_path + '.jpg')  
+        # print(self.loader.size().width(), self.loader.size().height())
 
-        map = QtGui.QPixmap(loader)
-        self.scaled_map = map.scaled(6000/self.block_size_rescale, 4000/self.block_size_rescale, QtCore.Qt.KeepAspectRatio)            # resize scatter image to 750x500, original size 6000x4000
+        map = QtGui.QPixmap(self.loader)
+        self.scaled_map = map.scaled(self.loader.size().width()/self.block_size_rescale, self.loader.size().height()/self.block_size_rescale, QtCore.Qt.KeepAspectRatio)            # resize scatter image to 750x500, original size 6000x4000
         self.scatter_label.setPixmap(self.scaled_map)
 
         print(self.position)
@@ -378,13 +416,13 @@ class CenterPointWindow(QWidget):
         self.close()
         self.destroy()
 
-    def retakeClicked(self):
-        msg = "<font color=red size=40>RE-TAKE THE CENTER POINT</font>"
-        self.main_window.main_label.setText(msg)
+    # def retakeClicked(self):
+    #     msg = "<font color=red size=40>RE-TAKE THE CENTER POINT</font>"
+    #     self.main_window.main_label.setText(msg)
 
-        print(self.main_window.main_label.text())
+    #     print(self.main_window.main_label.text())
 
-        self.getCenter()
+    #     self.getCenter()
 
     
     def errorMessage(self, error):
@@ -783,13 +821,14 @@ class ImageWindow(QWidget):
         self.end_loadimage = time.time()
 
         loader = QtGui.QImage()
-        loader.load(self.image_dir + '/' + self.main_window.surface_path + '.jpg')
+        # print(self.image_dir + '/' + self.main_window.scatter_path + '.jpg')
+        loader.load(os.path.join(self.image_dir, self.main_window.surface_path + '.jpg'))
 
         map = QtGui.QPixmap(loader)
         scaled_map = map.scaled(400, 400, QtCore.Qt.KeepAspectRatio)
         self.surface_label.setPixmap(scaled_map)
 
-        loader.load(self.image_dir + '/' + self.main_window.scatter_path + '.jpg')
+        loader.load(os.path.join(self.image_dir, self.main_window.scatter_path + '.jpg'))
 
         map = QtGui.QPixmap(loader)
         scaled_map = map.scaled(400, 400, QtCore.Qt.KeepAspectRatio)
@@ -799,15 +838,16 @@ class ImageWindow(QWidget):
 
 
         ############ Calculate Mask Here ##################
-        print(self.image_dir + '/' + self.main_window.scatter_path + '.jpg')
+        # print(os.path.join(self.image_dir, self.main_window.scatter_path + '.jpg'))
         # print(self.main_window.scatter_path)
         
         # if(int(self.main_window.scatter_path.split("_")[1]) > 1):
         ####### Change different seg methods and dependence here
         # scatter_name = self.image_dir + "/" + self.main_window.scatter_path + ".jpg"
-        scatter_name_nef = self.image_dir + "/" + self.main_window.scatter_path + ".nef"
+        scatter_name_nef = self.image_dir + "/" + self.main_window.scatter_path + '.nef'
 
         # scatter_name_nef = self.image_dir + "/" + "IMG_0004_scatter.nef"
+        # print(scatter_name_nef)
         
         # scatter_name = self.image_dir + "/test_input.jpg"
         # scatter_img = imageio.imread(scatter_name)
@@ -817,7 +857,8 @@ class ImageWindow(QWidget):
         # self.end_img_ready_2 = time.time()
        
         # print(int(self.main_window.position[1]), self.main_window.cropped_size[1]/2, int(self.main_window.position[1]), self.main_window.cropped_size[1]/2, int(self.main_window.position[0]), self.main_window.cropped_size[0]/2, int(self.main_window.position[0]), self.main_window.cropped_size[0]/2)
-       
+        # print(int(self.main_window.position[1]-self.main_window.cropped_size[1]/2), int(self.main_window.position[1]+self.main_window.cropped_size[1]/2), int(self.main_window.position[0]-self.main_window.cropped_size[0]/2), int(self.main_window.position[0]+self.main_window.cropped_size[0]/2))
+
         self.scatter_roi = scatter_img[int(self.main_window.position[1]-self.main_window.cropped_size[1]/2):int(self.main_window.position[1]+self.main_window.cropped_size[1]/2), int(self.main_window.position[0]-self.main_window.cropped_size[0]/2):int(self.main_window.position[0]+self.main_window.cropped_size[0]/2), :]
 
         roi_image = qimage2ndarray.array2qimage(self.scatter_roi)

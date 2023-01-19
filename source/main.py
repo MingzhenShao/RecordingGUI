@@ -10,7 +10,7 @@ import subprocess as sp
 from PySide2.QtWidgets import *
 from PySide2 import QtGui
 from PySide2 import QtCore
-from image import ImageWindow, CenterPointWindow, FocusWindow
+from image import ImageWindow, CenterPointWindow, FocusWindow, FocusCheckWindow
 from SimpleFNN import FNN
 import torch
 import gphoto2 as gp    
@@ -49,6 +49,14 @@ class MainWindow(QWidget):
         self.sect_first = True 
 
         self.model = self.init_cnn_model()
+
+        self.first_capture = True
+
+
+        self.img_dir_prefix = "/home2/tester/Desktop/Storage_2/"     #will be load from outside
+        # bkp_dir_prefix = "/v/raid10/animal_data/blockface/"
+        self.bkp_dir_prefix = "/home2/tester/Desktop/Storage_2/bkp/"
+
 
         # Create the arduino connection
         # Try all three USB ports
@@ -91,9 +99,6 @@ class MainWindow(QWidget):
         # Have the user select the directory for the images
         # self.image_dir = self.selectDirectory()
 
-        img_dir_prefix = "/home2/tester/Desktop/Storage_2/"     #will be load from outside
-        bkp_dir_prefix = "/v/raid10/animal_data/blockface/"
-
         # Do checking here
         # block num checking
         try:
@@ -130,8 +135,8 @@ class MainWindow(QWidget):
         #animal checking
         _animal_text = str(self.animal_textbox.text())
         _animal_type = _animal_text[0].lower()
-        print(_animal_text[1:])
-        if (_animal_type != 'r' and _animal_type != 'm'):
+        # print(_animal_text[1:])
+        if (_animal_type != 'r' and _animal_type != 'a'):
             temp = "<font color=red>Unvalid animal type!</font>"
             self.main_label.setText(temp)
             return
@@ -154,21 +159,22 @@ class MainWindow(QWidget):
 
         sample_folder = animal_name + '-' + sample_name
 
-        img_dir = os.path.join(img_dir_prefix, sample_folder, block_name)
-        bkp_dir = os.path.join(bkp_dir_prefix, sample_folder, block_name)
+        img_dir = os.path.join(self.img_dir_prefix, sample_folder, block_name)
+        bkp_dir = os.path.join(self.bkp_dir_prefix, sample_folder, block_name)
         print(img_dir, bkp_dir)
 
         
         if(not os.path.exists(img_dir)):
             os.makedirs(img_dir)
 
-        # if(not os.path.exists(bkp_dir)):
-        #     os.makedirs(bkp_dir)
+        if(not os.path.exists(bkp_dir)):
+            os.makedirs(bkp_dir)
 
         if(not (os.path.exists(img_dir) and os.path.exists(bkp_dir))):
             print("Fail to create saving path, please check!")
             temp = "<font color=red>Fail to create saving path, please check!</font>"
             self.main_label.setText(temp)
+            return 
 
         self.img_dir_label.setText(img_dir)
         self.bkp_dir_label.setText(bkp_dir)
@@ -181,6 +187,9 @@ class MainWindow(QWidget):
         # self.image_dir_label.setText(self.image_dir + '/')
         # Disable the button after the directory has been chosen
         self.image_dir_button.setDisabled(True)
+        self.animal_textbox.setDisabled(True)
+        self.sample_textbox.setDisabled(True)
+        self.block_textbox.setDisabled(True)
         # Start monitoring the directory
         # self._startWatcher()
 
@@ -529,6 +538,11 @@ class MainWindow(QWidget):
         # wait till accept the center point.
         self.center_window.loop.exec_() 
 
+    def focusCheck(self):
+        self.setEnabled(False)
+        self.focus_check_window = FocusCheckWindow(self.image_dir,self)
+        self.focus_check_window.show()
+
     def imageWindowLauncher(self):
 
         # Need a catch in here to only call once
@@ -565,18 +579,18 @@ class MainWindow(QWidget):
         try: 
             self.center_point_f = open(self.image_dir + '/csv_files/center_point.txt', 'r')
             self.position_list = self.center_point_f.readline().split(',')
-            self.position = [np.float(self.position_list[0]), np.float(self.position_list[1])]
-            self.cropped_size = [np.float(self.position_list[2]), np.float(self.position_list[3])]
-            self.block_size_rescale = np.float(self.position_list[4])
-        except FileNotFoundError:
-            print("'center_point.txt' not exist, creating...")
+            self.position = [float(self.position_list[0]), float(self.position_list[1])]
+            self.cropped_size = [float(self.position_list[2]), float(self.position_list[3])]
+            self.block_size_rescale = float(self.position_list[4])
+        except:
+            print("'center_point.txt' not exist OR empty, creating...")
             try:
                 self.center_point_f = open(self.image_dir + '/csv_files/center_point.txt', 'a+')
             except FileExistsError:
                 print("Fail to create {}, try to configure manually!".format(self.image_dir + '/csv_files/center_point.txt'))
                 quit()
 
-        if(int(self.scatter_path.split("_")[1]) != 1 and self.position==""):
+        if(int(self.scatter_path.split("_")[1]) != 1 and (not hasattr(self, "position"))):
             print("Missing center_point!")
             quit()
     
@@ -853,6 +867,11 @@ class MainWindow(QWidget):
         if(int(self.scatter_path.split("_")[1]) == 1):
             self.centerCapture()
 
+        if(self.first_capture == True):
+            self.first_capture = False
+            self.focusCheck()
+
+
         self.center_point_f.close()
 
         self.imageWindowLauncher()
@@ -1095,8 +1114,8 @@ class MainWindow(QWidget):
         self.sample_textbox.setText("000")
         self.block_textbox.setText("01")
 
-        self.img_dir_label.setText("/home2/tester/Desktop/Storage_1/???-???/??")
-        self.bkp_dir_label.setText("/v/raid10/animal_data/blockface/???-???/??")
+        self.img_dir_label.setText(self.img_dir_prefix + "???-???/??")
+        self.bkp_dir_label.setText(self.bkp_dir_prefix + "???-???/??")
 
 
         self.image_dist_label = QLabel()
@@ -1279,8 +1298,8 @@ if __name__ == '__main__':
     # Focus here
     # p = sp.Popen(["/home2/tester/Desktop/recordingGui-master/focus.sh"], shell=True, stdout=sp.PIPE)
 
-    # time.sleep(1)
-    # arduino.write(b'a')    
+    time.sleep(1)
+    arduino.write(b'b')    
 
     # focus_window = FocusWindow(window)
     # focus_window.show()
