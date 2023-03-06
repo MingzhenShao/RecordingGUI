@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 
-import os, shutil, sys, glob, time
-import csv
-import serial
-import qdarkstyle
+import os, shutil, sys, glob, time, csv, serial, qdarkstyle, filecmp
+
 import numpy as np
 import subprocess as sp
 
@@ -11,6 +9,7 @@ from PySide2.QtWidgets import *
 from PySide2 import QtGui
 from PySide2 import QtCore
 from image import ImageWindow, CenterPointWindow, FocusWindow, FocusCheckWindow
+
 from SimpleFNN import FNN
 import torch
 import gphoto2 as gp    
@@ -136,7 +135,7 @@ class MainWindow(QWidget):
         _animal_text = str(self.animal_textbox.text())
         _animal_type = _animal_text[0].lower()
         # print(_animal_text[1:])
-        if (_animal_type != 'r' and _animal_type != 'a'):
+        if (_animal_type != 'r' and _animal_type != 'a' and _animal_type != 'p'):
             temp = "<font color=red>Unvalid animal type!</font>"
             self.main_label.setText(temp)
             return
@@ -200,7 +199,7 @@ class MainWindow(QWidget):
             # self.iso_button_surface.setDisabled(False)
             # self.fstop_button_surface.setDisabled(False)
             # self.ss_button_surface.setDisabled(False)
-            # msg = "<font color=green>Everything Nominal</font>"
+            # msg = "<font color=green>Everything Normal</font>"
             # self.main_label.setText(msg)
         # self.backup_dir_button.setEnabled(True)
         # Populate the table
@@ -222,7 +221,7 @@ class MainWindow(QWidget):
         self.ss_button_scatter.setDisabled(False)
         self.capture_button.setDisabled(False)
         self.main_button.setDisabled(False)
-        temp = "<font color=green>Everything Nominal</font>"
+        temp = "<font color=green>Everything Normal</font>"
         self.main_label.setText(temp)
         
 
@@ -252,48 +251,99 @@ class MainWindow(QWidget):
     #     self.ss_button_scatter.setDisabled(False)
     #     self.capture_button.setDisabled(False)
     #     self.main_button.setDisabled(False)
-    #     temp = "<font color=green>Everything Nominal</font>"
+    #     temp = "<font color=green>Everything Normal</font>"
     #     self.main_label.setText(temp)
     #         # Populate the table
     #         # self.populateTable()
     #         # self.calibrationImage()
 
 
+    # def backup(self):
+    #     '''Function for backing up the image directory'''
+
+    #     # shutil.copytree(self.image_dir, self.backup_dir)        #Will overwrite become a problem?
+    #     # Create a list of the image files is the main and backup dirs
+    #     image_list = glob.glob(self.image_dir + '/*.nef')
+    #     backup_list = glob.glob(self.backup_dir + '/*.nef')
+
+    #     # Add the JPEGs
+    #     image_list += glob.glob(self.image_dir + '/*.jpg')
+    #     backup_list += glob.glob(self.backup_dir + '/*.jpg')
+
+    #     # Create a list of CSV files
+    #     csv_main_list = glob.glob(self.image_dir + '/csv_files/*')
+    #     csv_backup_list = glob.glob(self.backup_dir + '/csv_files/*')
+
+    #     # Remove any duplicates
+    #     image_names = [x.split('/')[-1] for x in image_list]
+    #     backup_names = [x.split('/')[-1] for x in backup_list]
+
+    #     csv_main_names = [x.split('/')[-1] for x in csv_main_list]
+    #     csv_backup_names = [x.split('/')[-1] for x in csv_backup_list]
+
+    #     # Make a list of images to copy
+    #     copy_names = [x for x in image_names if x not in backup_names]
+    #     csv_names = [x for x in csv_main_names if x not in csv_backup_names]
+
+    #     # Copy the images to the backup directoy
+    #     for image in copy_names:
+    #         sp.Popen(["cp", self.image_dir + '/' + image, self.backup_dir])
+
+    #     for file in csv_names:
+    #         sp.Popen(["cp", self.image_dir + '/csv_files/' +
+    #                   file, self.backup_dir + '/csv_files/'])
+    #     # Do we need to wait here?
+
+
     def backup(self):
-        '''Function for backing up the image directory'''
+        # # set the source and destination directories
+        # source_dir = "/path/to/source/folder"
+        # dest_dir = "/path/to/destination/folder"
 
-        # shutil.copytree(self.image_dir, self.backup_dir)        #Will overwrite become a problem?
-        # Create a list of the image files is the main and backup dirs
-        image_list = glob.glob(self.image_dir + '/*.nef')
-        backup_list = glob.glob(self.backup_dir + '/*.nef')
+        # loop through the root directory, subdirectories, and files
+        for root, dirs, files in os.walk(self.image_dir):
+            # skip any directories that start with "IM"
+            dirs[:] = [d for d in dirs if not d.startswith("IM")]
 
-        # Add the JPEGs
-        image_list += glob.glob(self.image_dir + '/*.jpg')
-        backup_list += glob.glob(self.backup_dir + '/*.jpg')
+            for file in files:
+                source_path = os.path.join(root, file)
+                dest_path = os.path.join(self.backup_dir, os.path.relpath(source_path, self.image_dir))
 
-        # Create a list of CSV files
-        csv_main_list = glob.glob(self.image_dir + '/csv_files/*')
-        csv_backup_list = glob.glob(self.backup_dir + '/csv_files/*')
+                # check if the file already exists in the destination directory
+                if os.path.exists(dest_path):
+                    # print(f"{os.path.relpath(source_path, self.image_dir)} already exists in the destination folder, skipping...")
+                    continue
 
-        # Remove any duplicates
-        image_names = [x.split('/')[-1] for x in image_list]
-        backup_names = [x.split('/')[-1] for x in backup_list]
+                # create the subdirectories in the destination directory if they don't exist
+                os.makedirs(os.path.dirname(dest_path), exist_ok=True)
 
-        csv_main_names = [x.split('/')[-1] for x in csv_main_list]
-        csv_backup_names = [x.split('/')[-1] for x in csv_backup_list]
+                # copy the file to the destination directory
+                shutil.copy2(source_path, dest_path)
+                # print(f"{os.path.relpath(source_path, self.image_dir)} copied to the destination folder.")
 
-        # Make a list of images to copy
-        copy_names = [x for x in image_names if x not in backup_names]
-        csv_names = [x for x in csv_main_names if x not in csv_backup_names]
+    def backup_terminal(self):
+      
+        # loop through the root directory, subdirectories, and files
+        for root, dirs, files in os.walk(self.image_dir):
+            # skip any directories that start with "IM"
+            dirs[:] = [d for d in dirs if not d.startswith("IM")]
 
-        # Copy the images to the backup directoy
-        for image in copy_names:
-            sp.Popen(["cp", self.image_dir + '/' + image, self.backup_dir])
+            for file in files:
+                source_path = os.path.join(root, file)
+                dest_path = os.path.join(self.backup_dir, os.path.relpath(source_path, self.image_dir))
 
-        for file in csv_names:
-            sp.Popen(["cp", self.image_dir + '/csv_files/' +
-                      file, self.backup_dir + '/csv_files/'])
-        # Do we need to wait here?
+                # check if the file already exists in the destination directory
+                if filecmp.cmp(source_path, dest_path):
+                    # print(f"{os.path.relpath(source_path, self.image_dir)} already exists in the destination folder, skipping...")
+                    continue
+
+                # create the subdirectories in the destination directory if they don't exist
+                os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+
+                # copy the file to the destination directory
+                shutil.copy2(source_path, dest_path)
+                print(f"{os.path.relpath(source_path, self.image_dir)} copied!")
+               
 
     def trim_buttonClick(self):
         print(self.trim_first)
@@ -310,7 +360,7 @@ class MainWindow(QWidget):
 
                 if reply == QMessageBox.Yes:
                     self.total_distance = int(self.main_table.item(self.main_table.rowCount()-1,1).text())
-                    # temp = "<font color=green>Everything Nominal</font>"
+                    # temp = "<font color=green>Everything Normal</font>"
                     # self.main_label.setText(temp)
                 else:
                     temp = "<font color=red>Please correct the Distance</font>"
@@ -320,7 +370,7 @@ class MainWindow(QWidget):
                     # self.sect_button.setEnabled(False)
                     # self.capture_button.setEnabled(False)
                     return
-        temp = "<font color=green>Everything Nominal</font>"
+        temp = "<font color=green>Everything Normal</font>"
         self.main_label.setText(temp)
 
         self.image_distance = self.image_distance + 10
@@ -364,7 +414,7 @@ class MainWindow(QWidget):
                     # self.sect_button.setEnabled(False)
                     # self.capture_button.setEnabled(False)
                     return
-        temp = "<font color=green>Everything Nominal</font>"
+        temp = "<font color=green>Everything Normal</font>"
         self.main_label.setText(temp)
 
         self.image_distance = self.image_distance + 5
@@ -471,7 +521,7 @@ class MainWindow(QWidget):
             table_list_1_name = str(self.table_list[-1][0][0])
            
         name = "csv_" + table_list_1_name + ".csv"
-        print(name)
+        # print(name)
        
         # Each time we call save(), using the data in main_table. time ok?
         save_table_list = self.table_list.copy()
@@ -486,11 +536,13 @@ class MainWindow(QWidget):
             for row in save_table_list:
                 writer.writerow(row)
 
-        # Backup to make sure the CSV file gets copied
-        self.backup()
 
     def closeEvent(self, event):
+        # save to make sure the CSV file gets copied
         self.save()
+
+        self.backup_terminal()
+
         event.accept()
         # reply = QMessageBox.question(self, 'Window Close', 'Are you sure you want to close the window?',
         #         QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
@@ -501,29 +553,6 @@ class MainWindow(QWidget):
         # else:
         #     event.ignore()
 
-    # def save_amendment_and_exit(self):
-    #     # change & save before capture
-    #     # print(self.table_list[-1][0], type(self.table_list[-1][0]))
-    #     if (type(self.table_list[-1][0] == type("string"))):
-    #         table_list_1_name = []
-    #         table_list_1_name.append(self.table_list[-1][0][2:18])
-    #         # print(table_list_1_name)
-    #     else:
-    #         table_list_1_name = self.table_list[-1][0]
-
-    #     for i, row in enumerate(self.table_list):
-    #         for j, col in enumerate(row):
-    #             self.table_list[i][j] = self.main_table.item(i,j).text()
-                    
-    #     # check here if the talbe_list is a string
-    
-    #     self.table_list[-1][0] = table_list_1_name
-    #     # print(self.table_list[-1][0])
-    #     # print(self.table_list[-1][0][0])
-    #     self.save()
-
-    #     self.close()
-    #     self.destroy()
 
     # Open a window for user to provide the center info of the tissure
     def centerCapture(self):
@@ -533,8 +562,7 @@ class MainWindow(QWidget):
         self.center_window.show()
         app.processEvents()
         self.center_window.getCenter()
-        self.backup()
-
+       
         # wait till accept the center point.
         self.center_window.loop.exec_() 
 
@@ -552,7 +580,7 @@ class MainWindow(QWidget):
         self.image_window.show()
         app.processEvents()
         self.image_window.loadImage()
-        self.backup()
+        # self.backup()
 
     def _getImageName(self):
 
@@ -586,11 +614,13 @@ class MainWindow(QWidget):
             print("'center_point.txt' not exist OR empty, creating...")
             try:
                 self.center_point_f = open(self.image_dir + '/csv_files/center_point.txt', 'a+')
+                self.centerCapture()
             except FileExistsError:
                 print("Fail to create {}, try to configure manually!".format(self.image_dir + '/csv_files/center_point.txt'))
                 quit()
+        self.center_point_f.close()
 
-        if(int(self.scatter_path.split("_")[1]) != 1 and (not hasattr(self, "position"))):
+        if((not hasattr(self, "position"))):
             print("Missing center_point!")
             quit()
     
@@ -674,9 +704,6 @@ class MainWindow(QWidget):
         # Get the image names
         self._getImageName()
         # self._updateCapture()
-
-        self.center_point_txt()
-
 
         surface_iso = self.iso_drop_surface.currentText()
         surface_ss = self.ss_drop_surface.currentText()
@@ -790,8 +817,6 @@ class MainWindow(QWidget):
         # print(gp.gp_widget_count_children(config))
 
        
-
-
         # p = sp.Popen(["gphoto2",
         #               "--set-config-index", f"iso={surface_iso}",
         #               "--set-config-index", f"shutterspeed={surface_ss}",
@@ -848,36 +873,26 @@ class MainWindow(QWidget):
         # p.wait()
 
         print("finished")
-       
 
         # Turn off both lights
         arduino.write(b'c')
-        # self.capture_button.setText("Capture Image")
-        # self.capture_button.setFont(self.large_text)
-
-        # time_B = time.time()
-        # print("time cost: ", time_B-time_A)
-        #  # time cost:  8.700865745544434
-        #  # time cost:  15.92504096031189
-
-        # quit()
-
+     
         ######## If 1st capture, collect the center point #######
         # print(self.surface_path)
-        if(int(self.scatter_path.split("_")[1]) == 1):
-            self.centerCapture()
-
         if(self.first_capture == True):
+            self.center_point_txt()
+
             self.first_capture = False
             self.focusCheck()
 
+        # if(int(self.scatter_path.split("_")[1]) == 1):
+        #     self.centerCapture()
 
-        self.center_point_f.close()
+        # self.center_point_f.close()
 
         self.imageWindowLauncher()
 
-
-        self.backup()
+        # self.backup()
 
     def main_button_clicked(self):
         self.section_a = False
@@ -1112,7 +1127,7 @@ class MainWindow(QWidget):
 
         self.animal_textbox.setText("R20")
         self.sample_textbox.setText("000")
-        self.block_textbox.setText("01")
+        self.block_textbox.setText("00")
 
         self.img_dir_label.setText(self.img_dir_prefix + "???-???/??")
         self.bkp_dir_label.setText(self.bkp_dir_prefix + "???-???/??")

@@ -259,7 +259,6 @@ class CenterPointWindow(QWidget):
         
         
     def initLayout(self):
-        # self.retake_button = QPushButton('Retake Center Point')
         self.accept_button = QPushButton('Accept Center Point')
         self.position_label = QLabel("Center Point: ")
         
@@ -386,10 +385,15 @@ class CenterPointWindow(QWidget):
         self.scaled_map = map.scaled(self.loader.size().width()/self.block_size_rescale, self.loader.size().height()/self.block_size_rescale, QtCore.Qt.KeepAspectRatio)            # resize scatter image to 750x500, original size 6000x4000
         self.scatter_label.setPixmap(self.scaled_map)
 
-        print(self.position)
+        # print(self.position)
 
 
     def acceptClicked(self):
+        # Reject invalid position
+        # if(int(self.position[1]-self.cropped_size[1]/2)<0 or int(self.position[1]+self.cropped_size[1]/2)>self.loader.height() or int(self.position[0]-self.cropped_size[0]/2)<0 or int(self.position[0]+self.cropped_size[0]/2)>self.loader.width()):
+        #     self.position_label.setText("Center Point too close to bord!")
+        #     return
+
         msg = "Center Point Provided!!!"
         self.main_window.main_label.setText(msg)
         self.main_window.main_label.setStyleSheet("color: white")
@@ -402,12 +406,8 @@ class CenterPointWindow(QWidget):
         self.main_window.sect_button.setDisabled(False)
         self.main_window.main_table.setDisabled(False)
 
-        if self.main_window.retake:
-            msg = "<font color=green>Everything Nominal</font>"
-            self.main_window.main_label.setText(msg)
-            self.main_window.retake = False
+        
 
-        self.main_window.retake = False
         self.main_window.center_point_f.write(str(self.position[0]) + ',' + str(self.position[1]) + ',' + str(self.cropped_size[0]) + ',' + str(self.cropped_size[1]) + ',' + str(self.block_size_rescale))
         self.main_window.position = self.position
         self.main_window.cropped_size = self.cropped_size
@@ -416,15 +416,17 @@ class CenterPointWindow(QWidget):
         self.close()
         self.destroy()
 
-    # def retakeClicked(self):
-    #     msg = "<font color=red size=40>RE-TAKE THE CENTER POINT</font>"
-    #     self.main_window.main_label.setText(msg)
 
-    #     print(self.main_window.main_label.text())
+    def closeEvent(self, event):
+        # print("position:", self.position == [0,0])
+        if (self.position == [0,0]):
+            # remove the center_point.txt
+            self.main_window.center_point_f.close()
+            os.remove(self.main_window.image_dir + '/csv_files/center_point.txt')
 
-    #     self.getCenter()
+        event.accept()
 
-    
+
     def errorMessage(self, error):
 
         msg = QMessageBox()
@@ -834,9 +836,7 @@ class ImageWindow(QWidget):
         scaled_map = map.scaled(400, 400, QtCore.Qt.KeepAspectRatio)
         self.scatter_label.setPixmap(scaled_map)
 
-        # self.end_img_ready_1 = time.time()
-
-
+      
         ############ Calculate Mask Here ##################
         # print(os.path.join(self.image_dir, self.main_window.scatter_path + '.jpg'))
         # print(self.main_window.scatter_path)
@@ -877,9 +877,6 @@ class ImageWindow(QWidget):
         self.cropped_scatter_label.setPixmap(self.scaled_roi_tmp)
         self.scaled_roi_painted = self.scaled_roi_tmp.copy()
 
-        # self.end_img_ready = time.time()
-
-     
         # Select ROI 
         ####### We take a 2400x1600 rect as input for segmentation, same 6x downsampled for these value (map.scaled(400, 400, QtCore.Qt.KeepAspectRatio)).
         
@@ -888,7 +885,6 @@ class ImageWindow(QWidget):
         # scaled_map = map.scaled(400, 400, QtCore.Qt.KeepAspectRatio)
         # self.scatter_mask_label.setPixmap(scaled_map)
 
-       
 
         # ### Get the pre_scatter ###
         # pre_scatter_num = int(self.main_window.scatter_path.split("_")[1]) - 1
@@ -979,18 +975,7 @@ class ImageWindow(QWidget):
             scaled_map = map.scaled(400, 400, QtCore.Qt.KeepAspectRatio)
             self.cnn_mask_label.setPixmap(scaled_map)
 
-        # self.end_cnn = time.time()
-        self.end_F= time.time()
-
-        print("Load Window time: {}".format(self.end_loadimage - self.begin_A))
-        # print("Pre-process_1 of images time: {}".format(self.end_img_ready_1 - self.begin_A))
-        # print("Pre-process_2 of images time: {}".format(self.end_img_ready_2 - self.begin_A))
-        # print("Pre-process of images time: {}".format(self.end_img_ready - self.begin_A))
-        # print("CNN time: {}".format(self.end_cnn - self.begin_A))
-        # print("pre_LDA time: {}".format(_load_lda_img - self.begin_A))
-        # print("LDA time: {}".format(self.end_lda - self.begin_A))
-        print("Total time: {}".format(self.end_F - self.begin_A))
-
+      
         # How long does metadata take
         # Metat data is a namedtuple container
         # with pyexiv2.ImageMetadata(self.image_dir + '/' + self.main_window.surface_path + '.nef') as raw:
@@ -1219,7 +1204,7 @@ class ImageWindow(QWidget):
                 self.main_window.main_label.setText(msg)
 
         self.main_window.retake = False
-        self.main_window.save()
+        
         self.close()
         self.destroy()
 
@@ -1240,10 +1225,16 @@ class ImageWindow(QWidget):
 
         # Save the row
         self.main_window.retake = True
-        self.main_window.save()
+        # self.main_window.save()
         self.close()
         self.destroy()
 
+    def closeEvent(self, event):
+        self.main_window.save()
+        self.main_window.backup()
+
+        event.accept()
+        
     def errorMessage(self, error):
 
         msg = QMessageBox()
