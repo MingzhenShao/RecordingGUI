@@ -11,8 +11,9 @@ from PySide2 import QtCore
 from image import ImageWindow, CenterPointWindow, FocusWindow, FocusCheckWindow
 
 from SimpleFNN import FNN
-import torch
+import torch, threading
 import gphoto2 as gp    
+from runScripts import runQA
 
 class MainWindow(QWidget):
 
@@ -53,8 +54,8 @@ class MainWindow(QWidget):
 
 
         self.img_dir_prefix = "/home2/tester/Desktop/Storage_2/"     #will be load from outside
-        # bkp_dir_prefix = "/v/raid10/animal_data/blockface/"
-        self.bkp_dir_prefix = "/home2/tester/Desktop/Storage_2/bkp/"
+        self.bkp_dir_prefix = "/v/raid10/animal_data/blockface/"
+        # self.bkp_dir_prefix = "/home2/tester/Desktop/Storage_2/bkp/"
 
 
         # Create the arduino connection
@@ -109,7 +110,7 @@ class MainWindow(QWidget):
 
         # print(int(self.block_textbox.text()))
         if(block_num<100):
-            block_name = self.block_textbox.text().zfill(2)
+            self.block_name = self.block_textbox.text().zfill(2)
         else:
             temp = "<font color=red>Block Number out of bound!</font>"
             self.main_label.setText(temp)
@@ -156,10 +157,10 @@ class MainWindow(QWidget):
             return    
 
 
-        sample_folder = animal_name + '-' + sample_name
+        self.sample_folder = animal_name + '-' + sample_name
 
-        img_dir = os.path.join(self.img_dir_prefix, sample_folder, block_name)
-        bkp_dir = os.path.join(self.bkp_dir_prefix, sample_folder, block_name)
+        img_dir = os.path.join(self.img_dir_prefix, self.sample_folder, self.block_name)
+        bkp_dir = os.path.join(self.bkp_dir_prefix, self.sample_folder, self.block_name)
         print(img_dir, bkp_dir)
 
         
@@ -1286,6 +1287,20 @@ class MainWindow(QWidget):
 
        msg.exec_()
        # print "value of pressed message box button:", retval
+
+    def closeEvent(self, event):
+        
+        reply = QMessageBox.question(self, 'QA section', 'Do you want to run the QA section?',
+                QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+
+        if reply == QMessageBox.Yes:
+            # threading.Thread(target=runQA, name="QA", args=[self.sample_folder, self.block_name])
+            runQA(self.sample_folder, self.block_name)
+            event.accept()
+            print('Run QA')
+        else:
+            event.accept()
+
 
 
 if __name__ == '__main__':
