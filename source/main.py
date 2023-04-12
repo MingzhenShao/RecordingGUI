@@ -54,8 +54,8 @@ class MainWindow(QWidget):
 
 
         self.img_dir_prefix = "/home2/tester/Desktop/Storage_2/"     #will be load from outside
-        self.bkp_dir_prefix = "/v/raid10/animal_data/blockface/"
-        # self.bkp_dir_prefix = "/home2/tester/Desktop/Storage_2/bkp/"
+        # self.bkp_dir_prefix = "/v/raid10/animal_data/blockface/"
+        self.bkp_dir_prefix = "/home2/tester/Desktop/Storage_2/bkp/"
 
 
         # Create the arduino connection
