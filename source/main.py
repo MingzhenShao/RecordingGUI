@@ -53,7 +53,7 @@ class MainWindow(QWidget):
         self.first_capture = True
 
 
-        self.img_dir_prefix = "/home2/tester/Desktop/Storage_2/"     #will be load from outside
+        self.img_dir_prefix = "/home2/tester/Desktop/Storage_1/"     #will be load from outside
         # self.bkp_dir_prefix = "/v/raid10/animal_data/blockface/"
         self.bkp_dir_prefix = "/home2/tester/Desktop/Storage_2/bkp/"
 
@@ -323,6 +323,12 @@ class MainWindow(QWidget):
                 # print(f"{os.path.relpath(source_path, self.image_dir)} copied to the destination folder.")
 
     def backup_terminal(self):
+        if (not(hasattr(self, 'image_dir'))):
+            # do not provide any folder
+            return
+        if(len(self.table_list) == 0):
+            # Closing GUI with an empty folder.
+            return
       
         # loop through the root directory, subdirectories, and files
         for root, dirs, files in os.walk(self.image_dir):
@@ -343,7 +349,7 @@ class MainWindow(QWidget):
 
                 # copy the file to the destination directory
                 shutil.copy2(source_path, dest_path)
-                print(f"{os.path.relpath(source_path, self.image_dir)} copied!")
+                # print(f"{os.path.relpath(source_path, self.image_dir)} copied!")
                
 
     def trim_buttonClick(self):
@@ -538,13 +544,13 @@ class MainWindow(QWidget):
                 writer.writerow(row)
 
 
-    def closeEvent(self, event):
-        # save to make sure the CSV file gets copied
-        self.save()
+    # def closeEvent(self, event):
+    #     # save to make sure the CSV file gets copied
+    #     self.save()
 
-        self.backup_terminal()
+    #     self.backup_terminal()
 
-        event.accept()
+    #     event.accept()
         # reply = QMessageBox.question(self, 'Window Close', 'Are you sure you want to close the window?',
         #         QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 
@@ -1289,6 +1295,12 @@ class MainWindow(QWidget):
        # print "value of pressed message box button:", retval
 
     def closeEvent(self, event):
+
+        time.sleep(1)
+        arduino.write(b'c') 
+
+        self.save()
+        self.backup_terminal()
         
         reply = QMessageBox.question(self, 'QA section', 'Do you want to run the QA section?',
                 QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
@@ -1300,8 +1312,6 @@ class MainWindow(QWidget):
             print('Run QA')
         else:
             event.accept()
-
-
 
 if __name__ == '__main__':
 

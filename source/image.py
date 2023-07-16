@@ -498,10 +498,10 @@ class ImageWindow(QWidget):
         self.cropped_scatter_label = QLabel("Loading...")
         self.scatter_mask_label = QLabel("Loading...")
         self.cropped_scatter_title = QLabel("Cropped Scatter Image")
-        self.scatter_mask_title = QLabel("Scatter Mask Image")
+        self.scatter_mask_title = QLabel("LDA Result")
 
         self.cnn_mask_label = QLabel("Loading...")
-        self.cnn_mask_title = QLabel("CNN Mask Image")
+        self.cnn_mask_title = QLabel("1CN Result")
         #################################
 
         self.notes_edit = QLineEdit("No notes")
