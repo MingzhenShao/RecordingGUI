@@ -6,7 +6,7 @@ import paramiko
 def runQA(animal_number, block_number):
     p = paramiko.SSHClient()
     p.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    p.connect("155.100.62.110", port=22, username="histoqa", password="ucair123")
+    p.connect("155.***.**.***", port=22, username="qa", password="123")
 
     transport = p.get_transport()
     channel = transport.open_session()
