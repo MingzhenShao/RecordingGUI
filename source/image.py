@@ -253,7 +253,9 @@ class CenterPointWindow(QWidget):
         self.position = [0,0]
 
         self.block_size_rescale = 8
-        self.cropped_size = [1600, 2400]
+        # self.cropped_size = [1600, 2400]
+
+        self.cropped_size = [2496, 3504]
 
         self.setLayout(self.initLayout())
         
@@ -342,11 +344,13 @@ class CenterPointWindow(QWidget):
 
             if(self.block_size_drop.currentText()=="Large"):
                 self.block_size_rescale = 8
-                self.cropped_size = [1600, 2400]
+                # self.cropped_size = [1600, 2400]
+                self.cropped_size = [2496, 3504]
                 pass
             elif(self.block_size_drop.currentText()=="Standard"):
                 self.block_size_rescale = 8
-                self.cropped_size = [1500, 1000]
+                # self.cropped_size = [1500, 1000]
+                self.cropped_size = [1800, 1200]
                 pass
             else:
                 self.scatter_cropped_label.setText("Block Size Error! \n Do not continue before Fixed!")
