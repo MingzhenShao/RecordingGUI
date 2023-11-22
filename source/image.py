@@ -23,140 +23,140 @@ import rawpy, time, skimage
 import concurrent.futures
 
 
-class FocusWindow(QWidget):
-    def __init__(self, main, parent=None):
-        super(FocusWindow, self).__init__(parent)
+# class FocusWindow(QWidget):
+#     def __init__(self, main, parent=None):
+#         super(FocusWindow, self).__init__(parent)
 
-        # Set main window properties
-        self.setGeometry(250, 250, 1400, 700)
-        self.setWindowTitle('Center Point Window')
+#         # Set main window properties
+#         self.setGeometry(250, 250, 1400, 700)
+#         self.setWindowTitle('Center Point Window')
 
-        self.main_window = main
+#         self.main_window = main
         
-        self.timer = QtCore.QTimer(self)
+#         self.timer = QtCore.QTimer(self)
 
-        self.timer.timeout.connect(self.displayFrame)
+#         self.timer.timeout.connect(self.displayFrame)
 
-        self.setLayout(self.initLayout())
+#         self.setLayout(self.initLayout())
 
 
-    #     super().__init__()
-    #     self.title = 'PyQt5 Video'
-    #     self.left = 100
-    #     self.top = 100
-    #     self.width = 640
-    #     self.height = 480
-    #     self.initUI()
+#     #     super().__init__()
+#     #     self.title = 'PyQt5 Video'
+#     #     self.left = 100
+#     #     self.top = 100
+#     #     self.width = 640
+#     #     self.height = 480
+#     #     self.initUI()
 
-    # # @QtCore.Qt.pyqtSlot(QImage)
-    # def setImage(self, image):
-    #     self.label.setPixmap(QPixmap.fromImage(image))
+#     # # @QtCore.Qt.pyqtSlot(QImage)
+#     # def setImage(self, image):
+#     #     self.label.setPixmap(QPixmap.fromImage(image))
 
-    # def initUI(self):
-    #     self.setWindowTitle(self.title)
-    #     self.setGeometry(self.left, self.top, self.width, self.height)
-    #     self.resize(1800, 1200)
-    #     # create a label
-    #     self.label = QLabel(self)
-    #     self.label.move(280, 120)
-    #     self.label.resize(640, 480)
-    #     th = Thread(self)
-    #     th.changePixmap.connect(self.setImage)
-    #     th.start()
-    #     self.show()
-    #     super(FocusWindow, self).__init__(parent)
+#     # def initUI(self):
+#     #     self.setWindowTitle(self.title)
+#     #     self.setGeometry(self.left, self.top, self.width, self.height)
+#     #     self.resize(1800, 1200)
+#     #     # create a label
+#     #     self.label = QLabel(self)
+#     #     self.label.move(280, 120)
+#     #     self.label.resize(640, 480)
+#     #     th = Thread(self)
+#     #     th.changePixmap.connect(self.setImage)
+#     #     th.start()
+#     #     self.show()
+#     #     super(FocusWindow, self).__init__(parent)
 
-    #     # Set main window properties
-    #     self.setGeometry(200, 200, 1350, 1200)
-    #     self.setWindowTitle('Focus Window')
+#     #     # Set main window properties
+#     #     self.setGeometry(200, 200, 1350, 1200)
+#     #     self.setWindowTitle('Focus Window')
 
-    #     # self.main_window = main
-    #     self.setLayout(self.initLayout())
+#     #     # self.main_window = main
+#     #     self.setLayout(self.initLayout())
         
 
-    def displayFrame(self):
-        cap = cv2.VideoCapture(0)
+#     def displayFrame(self):
+#         cap = cv2.VideoCapture(0)
 
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1250)
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1000)
-        ret, frame = cap.read()
-        if(ret):
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            image = qimage2ndarray.array2qimage(frame)
-            pixmap = QtGui.QPixmap.fromImage(image)
-            resizeImage = pixmap.scaled(1250, 1000, QtCore.Qt.KeepAspectRatio)
-            self.label.setPixmap(resizeImage)
+#         cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1250)
+#         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1000)
+#         ret, frame = cap.read()
+#         if(ret):
+#             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+#             image = qimage2ndarray.array2qimage(frame)
+#             pixmap = QtGui.QPixmap.fromImage(image)
+#             resizeImage = pixmap.scaled(1250, 1000, QtCore.Qt.KeepAspectRatio)
+#             self.label.setPixmap(resizeImage)
 
-    def stop(self):
-        self.timer.stop()
+#     def stop(self):
+#         self.timer.stop()
 
-        # self.p.kill()
-        # self.p.terminate()
+#         # self.p.kill()
+#         # self.p.terminate()
 
-        # self.arduino.write(b'c')
-        pid = os.getpid()
-        parent = psutil.Process(pid)
+#         # self.arduino.write(b'c')
+#         pid = os.getpid()
+#         parent = psutil.Process(pid)
 
-        # except psutil.Error:
-        #     # could not find parent process id
-        #     return
+#         # except psutil.Error:
+#         #     # could not find parent process id
+#         #     return
 
-        for child in parent.children(recursive=True):
-            child.terminate()
-        # self.p.wait()
-        # print(self.p.pid)
-        # os.kill((self.p.pid), signal.SIGTERM)
+#         for child in parent.children(recursive=True):
+#             child.terminate()
+#         # self.p.wait()
+#         # print(self.p.pid)
+#         # os.kill((self.p.pid), signal.SIGTERM)
 
-        self.close()
-        self.destroy()
-
-
-    def initLayout(self):
-          # OPENCV
-        self.label = QLabel('No Camera Feed')
-        button = QPushButton("Quiter")
-        button.clicked.connect(self.stop)
-
-        layout = QVBoxLayout()
-        layout.addWidget(button)
-        layout.addWidget(self.label)
-        self.setLayout(layout)
-        self.timer.start(60)
-
-        # self.arduino.write(b'b')
-        self.p = sp.Popen(["/home2/tester/Desktop/recordingGui-master/focus.sh"], shell=True, stdout=sp.PIPE)
-        # sout, _ = self.p.communicate()
-        # self.p.wait()
-        # self.p.kill()
-
-        # os.killpg(os.getpid(), signal.SIGTERM)
-        # print(os.getpid())
-        # p = sp.Popen(["ffmpeg", "-i","-", "-vcodec", "rawvideo", "-pix_fmt", "yuv420p", "-threads", "0", "-f", "v4l2", "/dev/video0"], stdin=sp.PIPE, stdout=sp.PIPE)
+#         self.close()
+#         self.destroy()
 
 
-        # timer for getting frames
+#     def initLayout(self):
+#           # OPENCV
+#         self.label = QLabel('No Camera Feed')
+#         button = QPushButton("Quiter")
+#         button.clicked.connect(self.stop)
 
-        # while True:
-        #     ret, frame = self.cap.read()
-        #     # print("num")
-        #     if ret:
-        #         print(frame)
-        #         rgbImage = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        #         h, w, ch = rgbImage.shape
-        #         bytesPerLine = ch * w
-        #         convertToQtFormat = QtGui.QImage(rgbImage.data, w, h, bytesPerLine, QtGui.QImage.Format_RGB888)
-        # #         # p = convertToQtFormat.scaled(1250, 1000, Qt.KeepAspectRatio)
-        # #         self.changePixmap.emit(p)
+#         layout = QVBoxLayout()
+#         layout.addWidget(button)
+#         layout.addWidget(self.label)
+#         self.setLayout(layout)
+#         self.timer.start(60)
 
-        #         convertToQtFormat = QtGui.QPixmap.fromImage(convertToQtFormat)
-        #         pixmap = QtGui.QPixmap(convertToQtFormat)
-        #          = pixmap.scaled(1250, 1000, QtCore.Qt.KeepAspectRatio)
-        # #         # QApplication.processEvents()
-        #         self.label.setPixmap(resizeImage)
-        #         self.show()
+#         # self.arduino.write(b'b')
+#         self.p = sp.Popen(["/home2/tester/Desktop/recordingGui-master/focus.sh"], shell=True, stdout=sp.PIPE)
+#         # sout, _ = self.p.communicate()
+#         # self.p.wait()
+#         # self.p.kill()
+
+#         # os.killpg(os.getpid(), signal.SIGTERM)
+#         # print(os.getpid())
+#         # p = sp.Popen(["ffmpeg", "-i","-", "-vcodec", "rawvideo", "-pix_fmt", "yuv420p", "-threads", "0", "-f", "v4l2", "/dev/video0"], stdin=sp.PIPE, stdout=sp.PIPE)
+
+
+#         # timer for getting frames
+
+#         # while True:
+#         #     ret, frame = self.cap.read()
+#         #     # print("num")
+#         #     if ret:
+#         #         print(frame)
+#         #         rgbImage = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+#         #         h, w, ch = rgbImage.shape
+#         #         bytesPerLine = ch * w
+#         #         convertToQtFormat = QtGui.QImage(rgbImage.data, w, h, bytesPerLine, QtGui.QImage.Format_RGB888)
+#         # #         # p = convertToQtFormat.scaled(1250, 1000, Qt.KeepAspectRatio)
+#         # #         self.changePixmap.emit(p)
+
+#         #         convertToQtFormat = QtGui.QPixmap.fromImage(convertToQtFormat)
+#         #         pixmap = QtGui.QPixmap(convertToQtFormat)
+#         #          = pixmap.scaled(1250, 1000, QtCore.Qt.KeepAspectRatio)
+#         # #         # QApplication.processEvents()
+#         #         self.label.setPixmap(resizeImage)
+#         #         self.show()
         
-        # self.destroy()) # quiter button 
-    # def run(self): 
+#         # self.destroy()) # quiter button 
+#     # def run(self): 
 
         
 
@@ -469,20 +469,10 @@ class ImageWindow(QWidget):
 
         self.bk_list = []
         self.fg_list = []
-        self.begin_A = time.time()
         self.rescale_size = 4.0
 
         self.setLayout(self.initLayout())
 
-    # def closeEvent(self, event):
-    #     reply = QMessageBox.question(self, 'Window Close', 'Are you sure you want to close the window?',
-    #             QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-
-    #     if reply == QMessageBox.Yes:
-    #         event.accept()
-    #         print('Window closed')
-    #     else:
-    #         event.ignore()
 
     def initLayout(self):
         self.retake_button = QPushButton('Retake Image')
@@ -504,8 +494,8 @@ class ImageWindow(QWidget):
         self.cropped_scatter_title = QLabel("Cropped Scatter Image")
         self.scatter_mask_title = QLabel("LDA Result")
 
-        self.cnn_mask_label = QLabel("Loading...")
-        self.cnn_mask_title = QLabel("1CN Result")
+        # self.cnn_mask_label = QLabel("Loading...")
+        # self.cnn_mask_title = QLabel("1CN Result")
         #################################
 
         self.notes_edit = QLineEdit("No notes")
@@ -564,7 +554,7 @@ class ImageWindow(QWidget):
         #################################
         self.cropped_scatter_label.setAlignment(QtCore.Qt.AlignLeft)
         self.scatter_mask_label.setAlignment(QtCore.Qt.AlignCenter)
-        self.cnn_mask_label.setAlignment(QtCore.Qt.AlignCenter)
+        # self.cnn_mask_label.setAlignment(QtCore.Qt.AlignCenter)
         #################################
 
         gridLayout = QGridLayout()
@@ -598,8 +588,8 @@ class ImageWindow(QWidget):
         maskLayout.addWidget(self.scatter_mask_title, 0, 1)
         maskLayout.addWidget(self.scatter_mask_label, 1, 1)
 
-        maskLayout.addWidget(self.cnn_mask_title, 0, 2)
-        maskLayout.addWidget(self.cnn_mask_label, 1, 2)
+        # maskLayout.addWidget(self.cnn_mask_title, 0, 2)
+        # maskLayout.addWidget(self.cnn_mask_label, 1, 2)
         ###############################
 
         maskLayout.setRowStretch(0, 5)
@@ -760,7 +750,7 @@ class ImageWindow(QWidget):
         # list((np.array(self.bk_list) * (np.max(self.main_window.cropped_size) / 400)).astype(int))
         print(self.bk_list)
 
-        start = time.time()
+        
         lda_input = skimage.transform.rescale(self.scatter_roi, 1/self.rescale_size, multichannel=True, anti_aliasing=True)
         for x in range(len(self.bk_list)):
             for i in range(len(self.bk_list[x])):
@@ -769,13 +759,21 @@ class ImageWindow(QWidget):
         print("After",self.bk_list)
         try:
             mask = segmenation_LDA(lda_input, self.bk_list, self.image_dir, self.main_window.scatter_path.split("_")[1])
+            if(np.max(mask)==0):
+                self.scatter_mask_label.setText("Reselect the BK & FG!")
+                print("Reselect the BK & FG!")
+
+            else:
+                _mask = qimage2ndarray.array2qimage((255*(mask/np.max(mask))).astype(np.uint8))
+                map = QtGui.QPixmap.fromImage(_mask)
+                scaled_map = map.scaled(400, 400, QtCore.Qt.KeepAspectRatio)
+                self.scatter_mask_label.setPixmap(scaled_map)
         except Exception as e:
             print(e)
             print("#######    ERROR! PLEASE RESELECT REGIONS    #######")
+            self.scatter_mask_label.setText("Reselect the BK & FG!")
 
-
-        end = time.time()
-        print("Time taken = ", end - start, "s")
+       
         # print("class:{}".format(set(mask.flatten())))
 
         # Remove the patch info (in case users not satisfied with the prediction & wish to redo the patch select)
@@ -784,47 +782,10 @@ class ImageWindow(QWidget):
         # mask = segmenation_LDA(self.scatter_roi, self.bk1_tl, self.bk1_tl, self.bk1_tl, int(self.size_val.text()))
 
         # imageio.imwrite(os.path.join(self.image_dir, "scatter_mask_tmp.jpg"), Image.fromarray((np.argmax(mask, axis=0) * 255 / mask.shape[0]).astype(np.uint8)))
-        if(np.max(mask)==0):
-            self.scatter_mask_label.setText("Reselect the BK & FG!")
-            print("Reselect the BK & FG!")
-
-        else:
-            imageio.imwrite(os.path.join(self.image_dir, "scatter_mask_tmp.jpg"), (255*(mask/np.max(mask))).astype(np.uint8))
-
-            loader = QtGui.QImage()
-            loader.load(self.image_dir + '/scatter_mask_tmp.jpg')
-
-            map = QtGui.QPixmap(loader)
-            scaled_map = map.scaled(400, 400, QtCore.Qt.KeepAspectRatio)
-            self.scatter_mask_label.setPixmap(scaled_map)
-
-        #remove the data
-
-        # Remove the patch info
-
-    # def segmentation(self):
-    #     net = UNet(n_channels=1, n_classes=2, bilinear=False)
-
-    #     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
        
-    #     net.to(device=device)
-    #     net.load_state_dict(torch.load("./unet/model.pth", map_location=device))
 
-    #     self.scatter_diff_roi = self.scatter_diff_roi[:,:,0]
-        
-    #     scatter_diff_roi_img = Image.fromarray(np.uint8(self.scatter_diff_roi))
-    #     # print(scatter_diff_roi_img.size)
-       
-    #     mask = predict.predict_img(net=net, full_img=scatter_diff_roi_img, scale_factor=0.5, device=device)
-    #     # print(mask.shape)
-
-    #     imageio.imwrite(os.path.join(self.image_dir, "scatter_diff_roi_tmp.png"), scatter_diff_roi)
-    #     imageio.imwrite(os.path.join(self.image_dir, "scatter_mask_tmp.png"), Image.fromarray((np.argmax(mask, axis=0) * 255 / mask.shape[0]).astype(np.uint8)))
-
-
+   
     def loadImage(self):
-
-        self.end_loadimage = time.time()
 
         loader = QtGui.QImage()
         # print(self.image_dir + '/' + self.main_window.scatter_path + '.jpg')
@@ -851,6 +812,7 @@ class ImageWindow(QWidget):
         scatter_name_nef = self.image_dir + "/" + self.main_window.scatter_path + '.nef'
 
         # scatter_name_nef = self.image_dir + "/" + "IMG_0004_scatter.nef"
+        # scatter_name_nef = "/home2/tester/Desktop/Storage_1/IACUC2049/C11-R03/01/" + "IMG_0053_scatter.nef"
         # print(scatter_name_nef)
         
         # scatter_name = self.image_dir + "/test_input.jpg"
@@ -858,8 +820,7 @@ class ImageWindow(QWidget):
 
         # scatter_name_nef = self.image_dir + "/IMG_0021_scatter.nef"
         scatter_img = rawpy.imread(scatter_name_nef).postprocess()
-        # self.end_img_ready_2 = time.time()
-       
+        
         # print(int(self.main_window.position[1]), self.main_window.cropped_size[1]/2, int(self.main_window.position[1]), self.main_window.cropped_size[1]/2, int(self.main_window.position[0]), self.main_window.cropped_size[0]/2, int(self.main_window.position[0]), self.main_window.cropped_size[0]/2)
         # print(int(self.main_window.position[1]-self.main_window.cropped_size[1]/2), int(self.main_window.position[1]+self.main_window.cropped_size[1]/2), int(self.main_window.position[0]-self.main_window.cropped_size[0]/2), int(self.main_window.position[0]+self.main_window.cropped_size[0]/2))
 
@@ -925,59 +886,25 @@ class ImageWindow(QWidget):
         # if(int(self.main_window.scatter_path.split("_")[1]) > 1):
             # try:
         lda_input = skimage.transform.rescale(self.scatter_roi, 1/self.rescale_size, multichannel=True, anti_aliasing=True)
-        # _load_lda_img = time.time()
+       
+        try:
+            mask = segmenation_LDA(lda_input, [], self.image_dir, self.main_window.scatter_path.split("_")[1])
+            if(np.max(mask)==0):
+                self.scatter_mask_label.setText("Reselect the BK & FG!")
+                print("Reselect the BK & FG!")
 
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            try:
-                lda_thread = executor.submit(segmenation_LDA, lda_input, [], self.image_dir, self.main_window.scatter_path.split("_")[1])
-            except Exception as e:
-                print(e)
-            cnn_thread = executor.submit(SegmentationNN, self.scatter_roi, self.main_window.model)
+            else:
+                _mask = qimage2ndarray.array2qimage((255*(mask/np.max(mask))).astype(np.uint8))
+                map = QtGui.QPixmap.fromImage(_mask)
+                scaled_map = map.scaled(400, 400, QtCore.Qt.KeepAspectRatio)
+                self.scatter_mask_label.setPixmap(scaled_map)
+        except Exception as e:
+            print(e)
+            print("#######    ERROR! PLEASE RESELECT REGIONS    #######")
+            self.scatter_mask_label.setText("Reselect the BK & FG!")
 
-            mask_cnn = cnn_thread.result()
-            mask = lda_thread.result()
-        # mask = segmenation_LDA(lda_input, [], self.image_dir, self.main_window.scatter_path.split("_")[1])
-        # self.end_lda = time.time()
-        # except:
-            # mask = np.zeros((40,40))
-        # print("class:{}".format(set(mask.flatten())))          
-        # imageio.imwrite(os.path.join(self.image_dir, "scatter_mask_tmp.jpg"), Image.fromarray((np.argmax(mask, axis=0) * 255 / mask.shape[0]).astype(np.uint8)))
-        if(np.max(mask)==0):
-            self.scatter_mask_label.setText("Reselect the Background & Foreground!")
-            print("Reselect the BK & FG!")
-        else:
-            # imageio.imwrite(os.path.join(self.image_dir, "scatter_mask_tmp.jpg"), (255*(mask/np.max(mask))).astype(np.uint8))
-
-            # loader = QtGui.QImage()
-            # loader.load(self.image_dir + '/scatter_mask_tmp.jpg')
-
-            # map = QtGui.QPixmap(loader)
-            _mask = qimage2ndarray.array2qimage((255*(mask/np.max(mask))).astype(np.uint8))
-            map = QtGui.QPixmap.fromImage(_mask)
-            scaled_map = map.scaled(400, 400, QtCore.Qt.KeepAspectRatio)
-            self.scatter_mask_label.setPixmap(scaled_map)
 
         ##############################
-
-        # mask_cnn = SegmentationNN(self.scatter_roi, self.main_window.model)
-       
-        # mask_cnn = np.ones((800,800))
-        if(np.max(mask_cnn)==0):
-            self.cnn_mask_label.setText("CNN output all ZERO array")
-            print("CNN output all ZERO array")
-        else:
-            # imageio.imwrite(os.path.join(self.image_dir, "cnn_mask_tmp.jpg"), (255*(mask_cnn/np.max(mask_cnn))).astype(np.uint8))
-
-            # loader = QtGui.QImage()
-            # loader.load(self.image_dir + '/cnn_mask_tmp.jpg')
-
-            # map = QtGui.QPixmap(loader)
-            # print(np.expand_dims(255*(mask_cnn/np.max(mask_cnn)), -1).astype(np.uint8).shape)
-            # quit()
-            _mask_cnn = qimage2ndarray.array2qimage((255*(mask_cnn/np.max(mask_cnn))).astype(np.uint8))
-            map = QtGui.QPixmap.fromImage(_mask_cnn)
-            scaled_map = map.scaled(400, 400, QtCore.Qt.KeepAspectRatio)
-            self.cnn_mask_label.setPixmap(scaled_map)
 
       
         # How long does metadata take
@@ -986,10 +913,7 @@ class ImageWindow(QWidget):
         raw_surface = pyexiv2.ImageMetadata(self.image_dir + '/' + self.main_window.surface_path + '.nef')
             # raw_img = exif.Image(raw)
         raw_surface.read()
-        # print("iso", raw_surface["Exif.Photo.ISOSpeedRatings"].value)
-        # print("aperture", raw_surface["Exif.Photo.FNumber"].value)
-        # print("shutter", raw_surface["Exif.Photo.ExposureTime"].value)
-        # print(raw_img.list_all())
+        
         self.iso_loaded_surface = raw_surface["Exif.Photo.ISOSpeedRatings"].value
         self.ss_loaded_surface = raw_surface["Exif.Photo.ExposureTime"].value
         self.fstop_loaded_surface = raw_surface["Exif.Photo.FNumber"].value
@@ -1147,7 +1071,7 @@ class ImageWindow(QWidget):
         self.main_window.image_distance = 0
         self.main_window.image_dist_label.setText('Image Distance: ' + str(0) + ' μm')
         # Reset the hit button text to what it was before
-        self.main_window.trim_button.setText("TRIM (10 μm)")
+        self.main_window.trim_button.setText("TRIM (50 μm)")
         self.main_window.trim_button.setStyleSheet("color: white")
         self.main_window.sect_button.setText("SECTION (5 μm)")
         self.main_window.sect_button.setStyleSheet("color: white")

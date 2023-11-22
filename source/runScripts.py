@@ -1,6 +1,4 @@
 import paramiko
-# animal_number = 'R20-091'
-# block_number = '00'
 
 
 def runQA(animal_number, block_number):
@@ -10,14 +8,5 @@ def runQA(animal_number, block_number):
 
     transport = p.get_transport()
     channel = transport.open_session()
-    channel.exec_command(f"cd /v/raid10/users/asingh/QA/Scripts \n source ./QA_venv/bin/activate \n bash QA.sh {animal_number} {block_number} \&>/v/raid10/users/histoqa/QA/logs/{animal_number}_{block_number}_output.txt \&")
-#     \&>/v/raid10/users/histoqa/QA/logs/{animal_number}_{block_number}_output.txt \&
-    # for line in stdout:
-    #     print(line)
-    # for line in stderr:
-    #     print(line)
+    channel.exec_command(f"cd /v/QA/Scripts \n source ./QA_venv/bin/activate \n bash QA.sh {animal_number} {block_number} \&>/v/QA/logs/{animal_number}_{block_number}_output.txt \&")
 
-    # print("Completed")
-
-
-# runScripts()

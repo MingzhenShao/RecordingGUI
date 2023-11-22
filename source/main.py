@@ -8,7 +8,7 @@ import subprocess as sp
 from PySide2.QtWidgets import *
 from PySide2 import QtGui
 from PySide2 import QtCore
-from image import ImageWindow, CenterPointWindow, FocusWindow, FocusCheckWindow
+from image import ImageWindow, CenterPointWindow, FocusCheckWindow
 
 from SimpleFNN import FNN
 import torch, threading
@@ -48,12 +48,12 @@ class MainWindow(QWidget):
         self.trim_first = True
         self.sect_first = True 
 
-        self.model = self.init_cnn_model()
+        # self.model = self.init_cnn_model()
 
         self.first_capture = True
 
 
-        self.img_dir_prefix = "/home2/tester/Desktop/Storage_1/"     #will be load from outside
+        self.img_dir_prefix = "/home2/tester/Desktop/Storage_2/"     #will be load from outside
         # self.bkp_dir_prefix = "/v/raid10/animal_data/blockface/"
         self.bkp_dir_prefix = "/home2/tester/Desktop/Storage_2/bkp/"
 
@@ -99,7 +99,7 @@ class MainWindow(QWidget):
         # Have the user select the directory for the images
         # self.image_dir = self.selectDirectory()
 
-        # Do checking here
+        # checking here
         # block num checking
         try:
             block_num = int(self.block_textbox.text())
@@ -116,51 +116,87 @@ class MainWindow(QWidget):
             self.main_label.setText(temp)
             return  
 
-        # sample num checking
-        try:
-            sample_num = int(self.sample_textbox.text())
-        except:
-            temp = "<font color=red>Unvalid Animal Number!</font>"
-            self.main_label.setText(temp)
-            return
-
-        # print(int(self.sample_textbox.text()))
-        if(sample_num<1000):
-            sample_name = self.sample_textbox.text().zfill(3)
-        else:
-            temp = "<font color=red>Animal Number out of bound!</font>"
-            self.main_label.setText(temp)
-            return    
 
         #animal checking
         _animal_text = str(self.animal_textbox.text())
         _animal_type = _animal_text[0].lower()
         # print(_animal_text[1:])
-        if (_animal_type != 'r' and _animal_type != 'a' and _animal_type != 'p'):
-            temp = "<font color=red>Unvalid animal type!</font>"
+        if (_animal_type != 'r' and _animal_type != 'c' and _animal_type != 'p'):
+            temp = "<font color=red>Unvalid animal type! (R/C/P)</font>"
             self.main_label.setText(temp)
             return
 
+        _animal_idx = _animal_text.find('-')
+        if _animal_idx == -1:
+            temp = "<font color=red>Animal Number should have '-'</font>"
+            self.main_label.setText(temp)
+            return
+        if _animal_idx > 3:
+            temp = "<font color=red>Animal Number should less than 99</font>"
+            self.main_label.setText(temp)
+            return
+
+
         try:
-            animal_num = int(_animal_text[1:])
+            animal_num = int(_animal_text[1:_animal_idx])
+            print(animal_num)
         except:
             temp = "<font color=red>Unvalid Animal Number</font>"
             self.main_label.setText(temp)
             return
 
+
         
         if(animal_num<100):
-            animal_name = _animal_text[0].upper() + _animal_text[1:].zfill(2)
+            animal_name = _animal_text[0].upper() + _animal_text[1:_animal_idx].zfill(2)
         else:
             temp = "<font color=red>Animal Number out of bound!</font>"
             self.main_label.setText(temp)
             return    
 
+        # sample num checking
+
+        if (_animal_type == 'c'):
+            if(_animal_text[_animal_idx+1].lower() != 'r'):
+                temp = "<font color=red>Unvalid animal type! (C??-R??)</font>"
+                self.main_label.setText(temp)
+                return
+            try:
+                sample_num = int(_animal_text[_animal_idx+2:])
+            except:
+                temp = "<font color=red>Unvalid Animal Number!</font>"
+                self.main_label.setText(temp)
+                return
+                
+            # print(int(self.sample_textbox.text()))
+            if(sample_num<100):
+                sample_name = _animal_text[_animal_idx+1].upper() + _animal_text[_animal_idx+2:].zfill(2)
+            else:
+                temp = "<font color=red>Animal Number out of bound!</font>"
+                self.main_label.setText(temp)
+                return    
+        else:
+            try:
+                sample_num = int(_animal_text[_animal_idx+1:])
+            except:
+                temp = "<font color=red>Unvalid Animal Number!</font>"
+                self.main_label.setText(temp)
+                return
+
+            # print(int(self.sample_textbox.text()))
+            if(sample_num<1000):
+                sample_name = _animal_text[_animal_idx+1:].zfill(3)
+            else:
+                temp = "<font color=red>Animal Number out of bound!</font>"
+                self.main_label.setText(temp)
+                return    
+
 
         self.sample_folder = animal_name + '-' + sample_name
+        self._project_name = str(self.project_name.currentText())
 
-        img_dir = os.path.join(self.img_dir_prefix, self.sample_folder, self.block_name)
-        bkp_dir = os.path.join(self.bkp_dir_prefix, self.sample_folder, self.block_name)
+        img_dir = os.path.join(self.img_dir_prefix, self._project_name, self.sample_folder, self.block_name)
+        bkp_dir = os.path.join(self.bkp_dir_prefix, self._project_name, self.sample_folder, self.block_name)
         print(img_dir, bkp_dir)
 
         
@@ -187,8 +223,9 @@ class MainWindow(QWidget):
         # self.image_dir_label.setText(self.image_dir + '/')
         # Disable the button after the directory has been chosen
         self.image_dir_button.setDisabled(True)
+
+        self.project_name.setDisabled(True)
         self.animal_textbox.setDisabled(True)
-        self.sample_textbox.setDisabled(True)
         self.block_textbox.setDisabled(True)
         # Start monitoring the directory
         # self._startWatcher()
@@ -224,6 +261,9 @@ class MainWindow(QWidget):
         self.main_button.setDisabled(False)
         temp = "<font color=green>Everything Normal</font>"
         self.main_label.setText(temp)
+
+        time.sleep(1)
+        arduino.write(b'b') 
         
 
     # def backup_dir_buttonClick(self):
@@ -380,21 +420,21 @@ class MainWindow(QWidget):
         temp = "<font color=green>Everything Normal</font>"
         self.main_label.setText(temp)
 
-        self.image_distance = self.image_distance + 10
-        self.total_distance = self.total_distance + 10
+        self.image_distance = self.image_distance + 50
+        self.total_distance = self.total_distance + 50
         self.image_dist_label.setText('Image Distance: ' + str(self.image_distance) + ' μm')
         self.total_dist_label.setText('Total Distance: ' + str(self.total_distance) + ' μm')
         
 
-        if self.image_distance == 50:
-            msg = "Take An Image!"
-            self.trim_button.setText(msg)
-            self.trim_button.setStyleSheet("color: red")
-            self.sect_button.setText(msg)
-            self.sect_button.setStyleSheet("color: red")
-            self.main_table.setEnabled(False)
-            self.trim_button.setEnabled(False)
-            self.sect_button.setEnabled(False)
+        # if self.image_distance == 50:
+        msg = "Take An Image!"
+        self.trim_button.setText(msg)
+        self.trim_button.setStyleSheet("color: red")
+        self.sect_button.setText(msg)
+        self.sect_button.setStyleSheet("color: red")
+        self.main_table.setEnabled(False)
+        self.trim_button.setEnabled(False)
+        self.sect_button.setEnabled(False)
 
     def sect_buttonClick(self):
 
@@ -530,7 +570,7 @@ class MainWindow(QWidget):
         name = "csv_" + table_list_1_name + ".csv"
         # print(name)
        
-        # Each time we call save(), using the data in main_table. time ok?
+        # Each time we call save(), using the data in main_table. speed ok?
         save_table_list = self.table_list.copy()
 
         for i, row in enumerate(self.table_list):
@@ -631,17 +671,17 @@ class MainWindow(QWidget):
             print("Missing center_point!")
             quit()
     
-    def init_cnn_model(self):
-        model_path = '/home2/tester/Desktop/recordingGui-master/best_model.pth'
-        patch_size = 1
-        n_input = 3 * ((2 * patch_size + 1) ** 2)
-        n_out = 3
-        n_hidden_layers = 1
-        npl = 32
-        model = FNN(n_input, n_out, n_hidden_layers, npl)
-        model.load(model_path)
-        model = model.cuda()
-        return model
+    # def init_cnn_model(self):
+    #     model_path = '/home2/tester/Desktop/recordingGui-master/best_model.pth'
+    #     patch_size = 1
+    #     n_input = 3 * ((2 * patch_size + 1) ** 2)
+    #     n_out = 3
+    #     n_hidden_layers = 1
+    #     npl = 32
+    #     model = FNN(n_input, n_out, n_hidden_layers, npl)
+    #     model.load(model_path)
+    #     model = model.cuda()
+    #     return model
 
     def changeSurfaceSS(self):
         self.ss_drop_surface.setDisabled(False)
@@ -1121,23 +1161,36 @@ class MainWindow(QWidget):
         self.img_dir_label = QLabel()
         self.bkp_dir_label = QLabel()
 
+        self.project_list = ['IACUC1800', 'IACUC1586', 'IACUC20-10004', 'IACUC20-03010', 'IACUC2003', 'IACUC2049']
+
         self.path_1_label = QLabel()
         self.path_2_label = QLabel()
-        self.path_3_label = QLabel()
+
+        self.project_name = QComboBox()
+        self.project_name.resize(self.project_name.sizeHint())
+
+        self.project_name.addItems(self.project_list)
+
+        self.project_name.setEditable(True)
+        line_edit = self.project_name.lineEdit()
+        line_edit.setAlignment(QtCore.Qt.AlignLeft)
+        line_edit.setReadOnly(True)
+
         self.animal_textbox = QLineEdit()
-        self.sample_textbox = QLineEdit()
+        # self.sample_textbox = QLineEdit()
         self.block_textbox = QLineEdit()
 
         self.path_1_label.setText("Animal Name")
-        self.path_2_label.setText("-")
-        self.path_3_label.setText("Block Number")
+        # self.path_2_label.setText("-")
+        self.path_2_label.setText("Block Number")
 
-        self.animal_textbox.setText("R20")
-        self.sample_textbox.setText("000")
+        self.animal_textbox.setText("R20-000")
+        # self.sample_textbox.setText("000")
         self.block_textbox.setText("00")
 
-        self.img_dir_label.setText(self.img_dir_prefix + "???-???/??")
-        self.bkp_dir_label.setText(self.bkp_dir_prefix + "???-???/??")
+
+        self.img_dir_label.setText(self.img_dir_prefix + "*/???-???/??")
+        self.bkp_dir_label.setText(self.bkp_dir_prefix + "*/???-???/??")
 
 
         self.image_dist_label = QLabel()
@@ -1164,7 +1217,7 @@ class MainWindow(QWidget):
         self.capture_button.setSizePolicy(QSizePolicy.Expanding,QSizePolicy.Expanding)
 
         # Initalize the messages for the main label and the directories
-        msg = "<font color=red>Please input the block information</font>"
+        msg = "<html><font color=red>Please input the block information</font><br>R??-??? or C??-R?? or P??-???</html>"
         # self.image_dir = "/Path/to/image/directoy/"
         # self.backup_dir = "/Path/to/backup/directoy/"
         self.main_message = msg
@@ -1204,12 +1257,13 @@ class MainWindow(QWidget):
         # path_layout.setColumnStretch(3,3)
         # path_layout.setColumnStretch(4,3)
         # path_layout.setColumnStretch(5,3)
-        path_layout.addWidget(self.path_1_label, 0, 1)
-        path_layout.addWidget(self.animal_textbox, 0, 2)
-        path_layout.addWidget(self.path_2_label, 0, 3)
-        path_layout.addWidget(self.sample_textbox, 0, 4)
-        path_layout.addWidget(self.path_3_label, 0, 5)
-        path_layout.addWidget(self.block_textbox, 0, 6)
+        path_layout.addWidget(self.project_name, 0, 1)
+        # path_layout.addWidget(self.animal_textbox, 0, 2)
+        path_layout.addWidget(self.path_1_label, 0, 2)
+        path_layout.addWidget(self.animal_textbox, 0, 3)
+        path_layout.addWidget(self.path_2_label, 0, 4)
+        path_layout.addWidget(self.block_textbox, 0, 5)
+
 
         path_layout.addWidget(self.img_dir_label, 1, 1, 1, 3)
         path_layout.addWidget(self.bkp_dir_label, 2, 1, 1, 3)
@@ -1231,7 +1285,7 @@ class MainWindow(QWidget):
     def _initHitLayout(self):
 
         # Make the hit button and the labels for the section distances
-        self.trim_button = QPushButton("TRIM (10 μm)")
+        self.trim_button = QPushButton("TRIM (50 μm)")
         self.sect_button = QPushButton("SECTION (5 μm)")
 
         self.image_dist_label = QLabel()
@@ -1330,16 +1384,18 @@ if __name__ == '__main__':
             except IOError:
                 print("You don't have the right arduino port.")
                 sys.exit()
-     
+    
+
     window = MainWindow()
 
     window.show()
 
+
+
     # Focus here
     # p = sp.Popen(["/home2/tester/Desktop/recordingGui-master/focus.sh"], shell=True, stdout=sp.PIPE)
 
-    time.sleep(1)
-    arduino.write(b'b')    
+
 
     # focus_window = FocusWindow(window)
     # focus_window.show()
